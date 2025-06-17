@@ -105,7 +105,7 @@
         
         /* Кнопки меню и карточки */
         .menu-button, .mode-card, .level-card {
-            background: var(--primary-green);
+            background: var(--card-bg);
             color: var(--text-dark);
             border: 2px solid transparent;
             border-radius: 16px;
@@ -142,27 +142,38 @@
         }
         
         .nav-item.selected { 
-            border-color: var(--primary-green-dark);
+            transform: scale(1.05);
         }
         
         /* Главное меню */
+        #main-menu-screen { position: relative; }
         #main-menu-screen .main-menu-container { display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 1; }
         #main-menu-screen .sub-menu-container { display: flex; gap: 20px; }
-        #play-button, #themes-button, #settings-button { background: var(--card-bg); color: var(--text-dark); border-radius: 50%; box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4); transition: transform 0.2s ease, box-shadow 0.2s ease; padding: 0; flex-grow: 0; border: none; display: flex; align-items: center; justify-content: center; }
-        #themes-button:hover, #settings-button:hover { transform: scale(1.1); box-shadow: 0 6px 20px -2px rgba(162, 196, 180, 0.5); }
+        #play-button, #themes-button, #settings-button, #sound-toggle-button { background: var(--card-bg); color: var(--text-dark); border-radius: 50%; box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4); transition: transform 0.2s ease, box-shadow 0.2s ease; padding: 0; flex-grow: 0; border: none; display: flex; align-items: center; justify-content: center; }
+        #themes-button:hover, #settings-button:hover, #sound-toggle-button:hover { transform: scale(1.1); box-shadow: 0 6px 20px -2px rgba(162, 196, 180, 0.5); }
         @keyframes play-pulse { 0% { transform: scale(1.0); box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4); } 50% { transform: scale(1.1); box-shadow: 0 8px 25px -2px rgba(162, 196, 180, 0.6); } 100% { transform: scale(1.0); box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4); } }
         #play-button:hover { animation: play-pulse 1.5s infinite ease-in-out; }
-        #play-button::after, #themes-button::after, #settings-button::after { display: none; }
+        #play-button::after, #themes-button::after, #settings-button::after, #sound-toggle-button::after { display: none; }
         #play-button { width: 140px; height: 140px; }
-        #themes-button, #settings-button { width: 90px; height: 90px; }
-        #play-button .play-icon, #themes-button .card-icon, #settings-button .card-icon { margin: 0; }
+        #themes-button, #settings-button, #sound-toggle-button { width: 90px; height: 90px; }
+        #play-button .play-icon, #themes-button .card-icon, #settings-button .card-icon, #sound-toggle-button .card-icon { margin: 0; }
         #play-button .play-icon { font-size: 5rem; }
-        #themes-button .card-icon, #settings-button .card-icon { font-size: 3rem; }
+        #themes-button .card-icon, #settings-button .card-icon, #sound-toggle-button .card-icon { font-size: 3rem; }
         #main-menu-screen .nav-item.selected { box-shadow: 0 6px 20px -2px rgba(162, 196, 180, 0.8); transform: scale(1.05); border: none; }
         
         /* Счетчик звезд */
         #total-stars-counter {
             position: absolute;
+            top: 0;
+            right: 0;
+            height: 10%;
+            padding: 0 24px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+        }
+        .stars-display{
             background-color: var(--card-bg);
             padding: 8px 16px;
             border-radius: 16px;
@@ -172,55 +183,11 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            z-index: 10;
-        }
-        #total-stars-counter {
-             top: 24px;
-             right: 24px;
         }
 
-
-        /* Убираем фон и заголовок с экранов выбора */
-        #themes-screen .menu-panel,
-        #game-mode-screen .menu-panel,
-        #settings-screen .menu-panel {
-            background: none;
-            box-shadow: none;
-        }
-        #themes-screen .panel-header,
-        #game-mode-screen .panel-header,
-        #level-selection-screen .panel-header,
-        #settings-screen .panel-header {
-            display: none;
-        }
-
-        /* Делаем кнопки на экранах выбора белыми */
-        #themes-screen .menu-button,
-        #game-mode-screen .mode-card,
-        #settings-screen .menu-button {
-            background-color: var(--card-bg);
-        }
-         #level-selection-screen .level-card {
-            background-color: var(--card-bg);
-             border: 2px solid var(--outline);
-        }
-
-        #themes-screen .nav-item.selected,
-        #game-mode-screen .nav-item.selected,
-        #level-selection-screen .nav-item.selected,
-        #settings-screen .nav-item.selected {
-             border-color: var(--primary-green);
-        }
-
-        /* Экран выбора режима игры */
-        .mode-card { font-size: 1.5rem; }
-
-        /* Экран выбора уровня и другие экраны меню */
-        #game-mode-screen,
-        #level-selection-screen,
-        #settings-screen,
-        #themes-screen {
-            justify-content: flex-end;
+        /* Панели подменю */
+         #game-mode-screen, #settings-screen, #themes-screen, #level-selection-screen {
+            justify-content: center;
             padding: 0;
             position: relative;
         }
@@ -239,29 +206,46 @@
         }
         .sub-screen-top-bar .back-button {
             position: static;
-            height: clamp(44px, 5vh, 56px);
-            width: clamp(44px, 5vh, 56px);
+            height: clamp(44px, 100%, 56px);
+            width: clamp(44px, 100%, 56px);
+            aspect-ratio: 1/1;
             font-size: 1.5rem;
         }
-        .sub-screen-top-bar .stars-clone {
-            background-color: var(--card-bg);
-            padding: 8px 16px;
-            border-radius: 16px;
-            box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4);
-            font-size: 1.5rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+       
         #game-mode-screen .menu-panel,
         #settings-screen .menu-panel,
-        #themes-screen .menu-panel,
-        #level-selection-screen .menu-panel {
+        #themes-screen .menu-panel {
             background: none;
             box-shadow: none;
+        }
+
+        .mode-card {
+            flex-direction: column;
+            gap: 8px;
+            padding-bottom: 32px;
+        }
+
+        .mode-percentage {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+       
+        /* Экран выбора уровня */
+        #level-selection-screen {
+            justify-content: flex-end; /* Align panel to bottom */
+        }
+        #level-selection-screen .menu-panel {
             height: 90%;
             width: 100%;
+            max-height: 90%;
+            justify-content: center;
+            background: none;
+            box-shadow: none;
         }
         #level-selection-grid {
             display: grid;
@@ -276,29 +260,21 @@
             box-sizing: border-box;
         }
         .level-card {
+            background-color: var(--card-bg);
+            border: 2px solid var(--outline);
             flex-direction: column;
             aspect-ratio: 1 / 1;
             padding: 8px;
             font-size: 1.8rem;
             min-height: 80px;
         }
-        .level-number {
-            margin-bottom: 4px;
-        }
-        .level-stars {
-            font-size: 0.8rem;
-            height: 1em;
-            line-height: 1;
-        }
+        .level-number { margin-bottom: 4px; }
+        .level-stars { font-size: 0.8rem; height: 1em; line-height: 1; }
         .level-stars .star { color: var(--star-gray); }
         .level-stars .star.filled { color: var(--star-yellow); }
 
         /* Игровой экран */
-        #game-screen {
-            padding: 0;
-            justify-content: space-between;
-        }
-
+        #game-screen { padding: 0; justify-content: space-between; }
         #game-top-ui {
             width: 100%;
             height: 5%;
@@ -309,23 +285,14 @@
             box-sizing: border-box;
             flex-shrink: 0;
         }
-
-        .top-left-buttons {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
+        .top-left-buttons { display: flex; align-items: center; gap: 15px; }
         #game-top-ui .game-screen-icon-button {
             position: static;
-            width: clamp(40px, 5vh, 48px);
-            height: clamp(40px, 5vh, 48px);
+            width: clamp(40px, 100%, 48px);
+            height: clamp(40px, 100%, 48px);
             font-size: 1.5rem;
         }
-
-        #game-top-ui #decor-counter {
-            position: static;
-        }
+        #game-top-ui #decor-counter { position: static; }
         .game-screen-icon-button { 
             position: relative; 
             border-radius: 50%; 
@@ -344,14 +311,7 @@
         .game-screen-icon-button:hover { transform: scale(1.1); box-shadow: 0 6px 20px -2px rgba(162, 196, 180, 0.5); }
         #restart-game-button:hover { transform: scale(1.1) rotate(25deg); }
         
-        #game-area-wrapper { 
-            width: 100%; 
-            height: 90%; 
-            margin: 0 auto; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-        }
+        #game-area-wrapper { width: 100%; height: 90%; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
         #maze-wrapper { position: relative; width: 100%; height:100%; min-height: 0; display: flex; align-items: center; justify-content: center; }
         #maze-container { position: relative; z-index: 2; max-width: 100%; max-height: 100%; }
         #maze-canvas { border-radius: 16px; display: block; max-width: 100%; max-height: 100%; }
@@ -368,9 +328,7 @@
             gap: 10px; 
             padding: 5px 0; 
         }
-        #game-screen.dpad-on #dpad-container { 
-            display: flex; 
-        }
+        #game-screen.dpad-on #dpad-container { display: flex; }
         .dpad-btn { width: 60px; height: 60px; background-color: var(--card-bg); color: var(--text-dark); border: none; border-radius: 50%; font-size: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: transform 0.1s ease; }
         .dpad-btn:active { transform: scale(0.95); background-color: var(--primary-green); }
         #dpad-left { order: 1; } #dpad-right { order: 2; } #dpad-down { order: 3; } #dpad-up { order: 4; }
@@ -414,46 +372,50 @@
     </style>
 </head>
 <body>
-    <div id="total-stars-counter">⭐ 0</div>
-    <div class="background-emojis"></div>
-    
     <div id="loading-screen" class="screen active">
         <div class="loader-container"><div class="loader" id="loader-progress"></div><div class="loader-inner"><span id="loader-percentage">0%</span></div></div>
     </div>
 
     <div id="main-menu-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div id="total-stars-counter"><div class="stars-display">⭐ 0</div></div>
         <div class="main-menu-container">
             <button id="play-button" class="menu-button nav-item" data-nav-index="0"><span class="play-icon">▶️</span></button>
             <div class="sub-menu-container">
                  <button id="themes-button" class="menu-button nav-item" data-nav-index="1"><span class="card-icon">🎨</span></button>
                  <button id="settings-button" class="menu-button nav-item" data-nav-index="2"><span class="card-icon">⚙️</span></button>
+                 <button id="sound-toggle-button" class="menu-button nav-item" data-nav-index="3"><span class="card-icon">🔊</span></button>
             </div>
         </div>
     </div>
 
     <div id="game-mode-screen" class="screen">
+        <div class="background-emojis"></div>
         <div class="sub-screen-top-bar">
             <button class="game-screen-icon-button back-button" data-target-screen="main-menu-screen">🏠</button>
-            <div class="stars-clone">⭐ 0</div>
+            <div class="stars-clone stars-display">⭐ 0</div>
         </div>
         <div class="menu-panel">
-            <div class="panel-header" data-lang="select_mode">Выберите режим</div>
             <button id="mode-classic" class="mode-card nav-item" data-nav-index="1" data-mode="classic">
                 <span class="card-icon">🗺️</span> <span data-lang="classic">Классический</span>
+                <div class="mode-percentage">0%</div>
             </button>
             <button id="mode-flashlight" class="mode-card nav-item" data-nav-index="2" data-mode="flashlight">
                 <span class="card-icon">🔦</span> <span data-lang="flashlight">Фонарик</span>
+                <div class="mode-percentage">0%</div>
             </button>
             <button id="mode-ghost" class="mode-card nav-item" data-nav-index="3" data-mode="ghost">
                 <span class="card-icon">👻</span> <span data-lang="ghost">Привидение</span>
+                <div class="mode-percentage">0%</div>
             </button>
         </div>
     </div>
 
     <div id="level-selection-screen" class="screen">
+        <div class="background-emojis"></div>
         <div class="sub-screen-top-bar">
             <button class="game-screen-icon-button back-button" data-target-screen="game-mode-screen">⬅️</button>
-            <div id="total-stars-counter-levels" class="stars-clone">⭐ 0</div>
+            <div id="total-stars-counter-levels" class="stars-clone stars-display">⭐ 0</div>
         </div>
         <div class="menu-panel">
             <div id="level-selection-grid"></div>
@@ -461,26 +423,25 @@
     </div>
 
     <div id="settings-screen" class="screen">
+        <div class="background-emojis"></div>
         <div class="sub-screen-top-bar">
             <button class="game-screen-icon-button back-button" data-target-screen="main-menu-screen">🏠</button>
-            <div class="stars-clone">⭐ 0</div>
+            <div class="stars-clone stars-display">⭐ 0</div>
         </div>
         <div class="menu-panel">
-            <div class="panel-header" data-lang="settings">Настройки</div>
             <button id="dpad-toggle-button" class="menu-button nav-item" data-nav-index="1">🕹️ <span data-lang="dpad_off"></span></button>
-            <button id="sound-toggle-button" class="menu-button nav-item" data-nav-index="2">🔊 <span data-lang="sound_on"></span></button>
-            <button id="language-button" class="menu-button nav-item" data-nav-index="3"><span class="card-icon">🌐</span><span></span></button>
-            <button id="reset-progress-button" class="menu-button nav-item" data-nav-index="4" style="background-color: var(--primary-pink);"><span data-lang="reset_progress"></span></button>
+            <button id="language-button" class="menu-button nav-item" data-nav-index="2"><span class="card-icon">🌐</span><span></span></button>
+            <button id="reset-progress-button" class="menu-button nav-item" data-nav-index="3" style="background-color: var(--primary-pink);"><span data-lang="reset_progress"></span></button>
         </div>
     </div>
     
     <div id="themes-screen" class="screen">
-         <div class="sub-screen-top-bar">
+        <div class="background-emojis"></div>
+        <div class="sub-screen-top-bar">
              <button class="game-screen-icon-button back-button" data-target-screen="main-menu-screen">🏠</button>
-             <div class="stars-clone">⭐ 0</div>
-         </div>
+             <div class="stars-clone stars-display">⭐ 0</div>
+        </div>
         <div class="menu-panel">
-             <div class="panel-header" data-lang="themes">Темы</div>
              <button id="random-theme-button" class="menu-button nav-item" data-nav-index="1" data-theme-key="random" tabindex="0"><span data-lang="random_theme"></span></button>
         </div>
     </div>
@@ -547,10 +508,26 @@
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const config = {
+            backgrounds: [
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-pink-3595.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-blue-purple-3588.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-pink-3599.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-pink-orange-3585.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-purple-3557.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-purple-3560.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-purple-3569.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-purple-3570.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-shape-purple-3463.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-shape-yellow-3472.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-shape-yellow-3474.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-yellow-orange-3575.png',
+                'https://lkalyadin.github.io/emojie_maze/images/abstract-design-element-yellow-orange-3577.png',
+                'https://lkalyadin.github.io/emojie_maze/images/design-element-wave-blue-3689.png'
+            ],
             levels: [
-                { h: 7, w: 4, bonuses: 1, visibility: { h: 2, w: 2 } },
-                { h: 5, w: 5, bonuses: 1, visibility: { h: 2, w: 2 } },
-                { h: 8, w: 5, bonuses: 2, visibility: { h: 2, w: 2 } },
+                { h: 7, w: 4, bonuses: 0, visibility: { h: 2, w: 2 } },
+                { h: 5, w: 5, bonuses: 0, visibility: { h: 2, w: 2 } },
+                { h: 8, w: 5, bonuses: 0, visibility: { h: 2, w: 2 } },
                 { h: 6, w: 5, bonuses: 2, visibility: { h: 3, w: 3 } },
                 { h: 6, w: 6, bonuses: 2, visibility: { h: 3, w: 3 } },
                 { h: 9, w: 6, bonuses: 3, visibility: { h: 3, w: 3 } },
@@ -575,7 +552,7 @@
                 { h: 16, w: 16, bonuses: 7, visibility: { h: 7, w: 7 } }
             ],
             themes: {
-                jungle: { name: 'Джунгли', player: '🐒', finish: '🍌', walls: ['🌳', '🍃', '🌴', '🌸'], decor: ['🌺', '🦋'], gradient: ['#D4F0C4', '#A0D8A0']},
+                jungle: { name: 'Джунгли', player: '🐒', finish: '�', walls: ['🌳', '🍃', '🌴', '🌸'], decor: ['🌺', '🦋'], gradient: ['#D4F0C4', '#A0D8A0']},
                 antarctica: { name: 'Антарктика', player: '🐧', finish: '❤️', walls: ['❄️', '🧊'], decor: ['🧊', '❄️'], gradient: ['#E6F3FB', '#B0C4DE']},
                 catsAndMice: { name: 'Кошки-мышки', player: '🐱', finish: '🐭', walls: ['🌲', '🏠', '🌿', '🐾'], decor: ['🧶', '🧀'], gradient: ['#FFFACD', '#F5DEB3']},
                 snail: { name: 'Улитка', player: '🐌', finish: '🥬', walls: ['🌲', '🌸', '🍄', '💧'], decor: ['🐞', '🌼'], gradient: ['#DFF0D8', '#BDECB6']},
@@ -584,11 +561,11 @@
                 desert: { name: 'Пустыня', player: '🐪', finish: '🌴', walls: ['🌵', '🏜️', '⛰️'], decor: ['🏜️'], gradient: ['#FADDAA', '#EDC967']}
             },
             audio: {
-                menu: 'https://lkalyadin.github.io/emojie_maze/audio/light.mp3',
-                game: [ 'https://lkalyadin.github.io/emojie_maze/audio/kinderszenen.mp3', 'https://lkalyadin.github.io/emojie_maze/audio/etude8.mp3', 'https://lkalyadin.github.io/emojie_maze/audio/dogsandcats.mp3', 'https://lkalyadin.github.io/emojie_maze/audio/theskaterswaltz.mp3' ],
-                victorySfx: ['https://lkalyadin.github.io/emojie_maze/audio/sfx-piano-bar2.mp3', 'https://lkalyadin.github.io/emojie_maze/audio/sfx-sfx-strings7.mp3'],
-                collectSfx: 'https://lkalyadin.github.io/emojie_maze/audio/sfx-magic15.mp3',
-                defeatSfx: 'https://lkalyadin.github.io/emojie_maze/audio/sfx-mouth10.mp3',
+                menu: 'https://lkalyadin.github.io/emojie_maze/audio/light.ogg',
+                game: [ 'https://lkalyadin.github.io/emojie_maze/audio/kinderszenen.ogg', 'https://lkalyadin.github.io/emojie_maze/audio/etude8.ogg', 'https://lkalyadin.github.io/emojie_maze/audio/dogsandcats.ogg', 'https://lkalyadin.github.io/emojie_maze/audio/theskaterswaltz.ogg' ],
+                victorySfx: ['https://lkalyadin.github.io/emojie_maze/audio/sfx-piano-bar2.ogg', 'https://lkalyadin.github.io/emojie_maze/audio/sfx-sfx-strings7.ogg'],
+                collectSfx: 'https://lkalyadin.github.io/emojie_maze/audio/sfx-magic15.ogg',
+                defeatSfx: 'https://lkalyadin.github.io/emojie_maze/audio/sfx-mouth10.ogg',
             },
             languageNames: {
                 ru: 'Русский',
@@ -600,7 +577,6 @@
                     classic: 'Классический', flashlight: 'Фонарик', ghost: 'Привидение', desert: 'Пустыня',
                     menu: 'Меню', retry: 'Повторить', next_level: 'Следующий',
                     dpad_on: 'D-pad Вкл', dpad_off: 'D-pad Выкл', 
-                    sound_on: 'Звук Вкл', sound_off: 'Звук Выкл',
                     confirm_exit_title: 'Вернуться в меню?', confirm_exit_text: 'Прогресс уровня не будет сохранен.',
                     select_mode: 'Выберите режим', reset_progress: 'Сбросить прогресс',
                     confirm_reset_title: 'Сбросить прогресс?', confirm_reset_text: 'Все ваши звезды будут удалены. Это действие необратимо.'
@@ -610,7 +586,6 @@
                     classic: 'Classic', flashlight: 'Flashlight', ghost: 'Ghost', desert: 'Desert',
                     menu: 'Menu', retry: 'Retry', next_level: 'Next Level',
                     dpad_on: 'D-pad On', dpad_off: 'D-pad Off', 
-                    sound_on: 'Sound On', sound_off: 'Sound Off',
                     confirm_exit_title: 'Return to menu?', confirm_exit_text: 'Level progress will be lost.',
                     select_mode: 'Select Mode', reset_progress: 'Reset Progress',
                     confirm_reset_title: 'Reset progress?', confirm_reset_text: 'All your stars will be deleted. This action is irreversible.'
@@ -636,6 +611,7 @@
             startPos: {x: 0, y: 0},
             finishPos: {x: 0, y: 0},
             ghostPos: {x: 0, y: 0},
+            startGhostPos: {x: 0, y: 0},
             playerStepCount: 0,
             jumpState: { active: false, progress: 0 },
             jumpAnim: { yOffset: 0, scale: 1 },
@@ -660,8 +636,9 @@
         const mazeCtx = mazeCanvas.getContext('2d');
         const totalStarsCounter = document.getElementById('total-stars-counter');
         const backgroundEmojis = document.querySelector('.background-emojis');
+        const loadedBackgroundImages = [];
 
-        let mazeGrid, initialMazeGrid, currentTheme, cellSize;
+        let mazeGrid, initialMazeGrid, currentTheme, cellSize, currentBgImage;
         let hintScreenActive = false, touchStartX, touchStartY;
         let animationFrameId;
         let displayPos = { x: 0, y: 0 }, targetPos = { x: 0, y: 0 };
@@ -697,7 +674,7 @@
             const ghostStars = Object.values(state.progress.ghost || {}).reduce((sum, stars) => sum + stars, 0);
             const totalStars = classicStars + flashlightStars + ghostStars;
             const counterText = `⭐ ${totalStars}`;
-            totalStarsCounter.innerHTML = counterText;
+            document.querySelector('#total-stars-counter .stars-display').innerHTML = counterText;
             document.querySelectorAll('.stars-clone').forEach(el => el.innerHTML = counterText);
         }
 
@@ -705,6 +682,7 @@
             state.progress = { classic: {}, flashlight: {}, ghost: {} };
             saveProgress();
             updateTotalStarsCounter();
+            updateModeCompletionPercentage();
             if (state.currentScreen === 'level-selection-screen') {
                 showLevelSelectionScreen(state.gameMode);
             }
@@ -718,11 +696,15 @@
             if (nextScreenEl) nextScreenEl.classList.add('active');
             state.currentScreen = screenId;
             
-            const isSubScreen = ['game-mode-screen', 'level-selection-screen', 'settings-screen', 'themes-screen'].includes(screenId);
-            totalStarsCounter.style.display = isSubScreen || screenId === 'game-screen' ? 'none' : 'flex';
+            totalStarsCounter.style.display = screenId === 'main-menu-screen' ? 'flex' : 'none';
             
-            if (screenId === 'main-menu-screen') {
+            if (screenId === 'main-menu-screen' || screenId === 'game-mode-screen' || screenId === 'settings-screen' || screenId === 'themes-screen' || screenId === 'level-selection-screen') {
                 updateTotalStarsCounter();
+                updateEmojiBackground();
+            }
+
+            if(screenId === 'game-mode-screen') {
+                updateModeCompletionPercentage();
             }
 
             document.getElementById('game-screen').classList.toggle('dpad-on', state.settings.dpad);
@@ -780,7 +762,7 @@
                     handled = true; 
                     break;
                 case 'ArrowRight':
-                    if (state.currentScreen === 'level-selection-screen') {
+                    if (state.currentScreen === 'level-selection-screen' || state.currentScreen === 'main-menu-screen') {
                         state.currentNavIndex = Math.min(state.currentNavIndex + 1, state.navigableItems.length - 1);
                     } else {
                          state.currentNavIndex = (state.currentNavIndex + 1) % state.navigableItems.length; 
@@ -788,7 +770,7 @@
                     handled = true;
                     break;
                 case 'ArrowLeft':
-                    if (state.currentScreen === 'level-selection-screen') {
+                    if (state.currentScreen === 'level-selection-screen' || state.currentScreen === 'main-menu-screen') {
                         state.currentNavIndex = Math.max(state.currentNavIndex - 1, 0);
                     } else {
                          state.currentNavIndex = (state.currentNavIndex - 1 + state.navigableItems.length) % state.navigableItems.length; 
@@ -807,6 +789,9 @@
         }
 
         function updateEmojiBackground() {
+            const container = document.querySelector(`#${state.currentScreen} > .background-emojis`);
+            if (!container) return;
+
             let themeConfig = config.themes[state.theme];
             let emojis = [];
             if (!themeConfig || state.theme === 'random') {
@@ -815,7 +800,7 @@
                 emojis.push(...themeConfig.walls);
             }
             
-            backgroundEmojis.innerHTML = '';
+            container.innerHTML = '';
             for (let i = 0; i < 60; i++) {
                 const emoji = document.createElement('span');
                 emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)] || '✨';
@@ -827,7 +812,7 @@
                     emoji.classList.add('animated');
                     emoji.style.animationDelay = `${Math.random() * 12}s`;
                 }
-                backgroundEmojis.appendChild(emoji);
+                container.appendChild(emoji);
             }
         }
         
@@ -1133,6 +1118,13 @@
             mazeCtx.fillStyle = gradient;
             mazeCtx.fillRect(0, 0, mazeCanvas.width, mazeCanvas.height);
             
+            if (currentBgImage && currentBgImage.complete) {
+                mazeCtx.save();
+                mazeCtx.globalAlpha = 0.35; // Set image opacity
+                mazeCtx.drawImage(currentBgImage, 0, 0, mazeCanvas.width, mazeCanvas.height);
+                mazeCtx.restore();
+            }
+            
             drawWalls();
             drawDecor();
 
@@ -1179,8 +1171,32 @@
         }
 
         function restartLevel() {
+            if (!initialMazeGrid) return;
             hideModal(victoryModal);
-            startGame(state.currentLevel);
+            stopGameLoop(); 
+
+            mazeGrid = JSON.parse(JSON.stringify(initialMazeGrid));
+            
+            state.playerPos = { ...state.startPos };
+            targetPos.x = displayPos.x = state.playerPos.x * cellSize + cellSize / 2;
+            targetPos.y = displayPos.y = state.playerPos.y * cellSize + cellSize / 2;
+
+            if (state.gameMode === 'ghost' && state.startGhostPos) {
+                 state.ghostPos = { ...state.startGhostPos };
+            }
+            
+            state.collectedDecor = 0;
+            state.playerStepCount = 0;
+            state.playerIsDefeated = false;
+            state.defeatAnimation = { progress: 0, bubbles: [] };
+            state.jumpState = { active: false, progress: 0 };
+            state.jumpAnim = { yOffset: 0, scale: 1 };
+            
+            updateDecorCounter();
+
+            hintScreenActive = false;
+            state.isGameActive = true; 
+            gameLoop();
         }
 
         function handleGameInput(e) {
@@ -1270,7 +1286,7 @@
                 currentTheme = config.themes[themeKeys[Math.floor(Math.random() * themeKeys.length)]];
             } else { currentTheme = config.themes[state.theme]; }
             
-            state.wallColor = currentTheme.gradient[1]; 
+            currentBgImage = loadedBackgroundImages[Math.floor(Math.random() * loadedBackgroundImages.length)];
 
             state.mazeWidth = levelConf.w;
             state.mazeHeight = levelConf.h;
@@ -1293,7 +1309,9 @@
                         }
                     }
                 }
-                state.ghostPos = availableCells.length > 0 ? availableCells[Math.floor(Math.random() * availableCells.length)] : { x: -1, y: -1 };
+                const startGhostPos = availableCells.length > 0 ? availableCells[Math.floor(Math.random() * availableCells.length)] : { x: -1, y: -1 };
+                state.ghostPos = {...startGhostPos};
+                state.startGhostPos = {...startGhostPos};
             }
 
             initialMazeGrid = JSON.parse(JSON.stringify(mazeGrid)); 
@@ -1332,11 +1350,18 @@
             
             mazeCtx.clearRect(0, 0, mazeCanvas.width, mazeCanvas.height);
             
+            if (currentBgImage && currentBgImage.complete) {
+                mazeCtx.drawImage(currentBgImage, 0, 0, mazeCanvas.width, mazeCanvas.height);
+            }
+            
             const gradient = mazeCtx.createLinearGradient(0, 0, 0, mazeCanvas.height);
             gradient.addColorStop(0, currentTheme.gradient[0]);
             gradient.addColorStop(1, currentTheme.gradient[1]);
+            mazeCtx.save();
+            mazeCtx.globalAlpha = 0.2;
             mazeCtx.fillStyle = gradient;
             mazeCtx.fillRect(0, 0, mazeCanvas.width, mazeCanvas.height);
+            mazeCtx.restore();
 
             drawWalls();
             drawDecor();
@@ -1467,6 +1492,7 @@
 
         function showModal(modal) { modal.classList.add('visible'); }
         function hideModal(modal) { modal.classList.remove('visible'); }
+
         function setLanguage(lang) { 
             state.settings.language = lang; 
             document.documentElement.lang = lang; 
@@ -1479,18 +1505,73 @@
             }); 
             const dpadKey = state.settings.dpad ? 'dpad_on' : 'dpad_off'; 
             if(document.getElementById('dpad-toggle-button').querySelector('span')) document.getElementById('dpad-toggle-button').querySelector('span').textContent = config.languages[lang][dpadKey]; 
-            const soundKey = state.settings.sound ? 'sound_on' : 'sound_off'; 
-            if(document.getElementById('sound-toggle-button').querySelector('span')) document.getElementById('sound-toggle-button').querySelector('span').textContent = config.languages[lang][soundKey]; 
             
             const langButtonSpan = document.querySelector('#language-button span:not(.card-icon)');
             if (langButtonSpan) {
                 langButtonSpan.textContent = config.languageNames[lang] || lang.toUpperCase();
             }
         }
+
+        function updateSoundButtonUI() {
+            const soundButton = document.getElementById('sound-toggle-button');
+            if (soundButton) {
+                const icon = soundButton.querySelector('.card-icon');
+                if (icon) {
+                    icon.textContent = state.settings.sound ? '🔊' : '🔇';
+                }
+            }
+        }
+
+        function updateModeCompletionPercentage() {
+            const totalPossibleStars = config.levels.length * 3;
+            for (const mode of ['classic', 'flashlight', 'ghost']) {
+                const modeCard = document.getElementById(`mode-${mode}`);
+                if (modeCard) {
+                    const percentageEl = modeCard.querySelector('.mode-percentage');
+                    if (percentageEl) {
+                        const earnedStars = Object.values(state.progress[mode] || {}).reduce((sum, stars) => sum + stars, 0);
+                        const percentage = totalPossibleStars > 0 ? Math.round((earnedStars / totalPossibleStars) * 100) : 0;
+                        percentageEl.textContent = `${percentage}%`;
+                    }
+                }
+            }
+        }
         
-        function initialize() {
+        async function preloadAssets() {
+            const imagePromises = config.backgrounds.map(src => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = () => {
+                        console.warn(`Failed to load image, will be skipped: ${src}`);
+                        resolve(null); // Resolve with null to not break Promise.all
+                    };
+                    img.crossOrigin = "Anonymous";
+                    img.src = src;
+                });
+            });
+
+            const loaderProgress = document.getElementById('loader-progress');
+            const loaderPercentage = document.getElementById('loader-percentage');
+            const totalAssets = imagePromises.length;
+            
+            for(let i=0; i<imagePromises.length; i++) {
+                const img = await imagePromises[i];
+                if (img) {
+                    loadedBackgroundImages.push(img);
+                }
+                const progress = Math.round(((i + 1) / totalAssets) * 100);
+                loaderProgress.style.background = `conic-gradient(var(--primary-pink) ${progress * 3.6}deg, #E0E0E0 0%)`;
+                loaderPercentage.textContent = `${progress}%`;
+            }
+        }
+
+        async function initialize() {
             loadProgress();
             updateTotalStarsCounter();
+            updateModeCompletionPercentage();
+            updateSoundButtonUI();
+
 
             const userLang = navigator.language.slice(0, 2);
             const defaultLang = config.languages[userLang] ? userLang : 'en';
@@ -1536,7 +1617,18 @@
             document.getElementById('random-theme-button').addEventListener('click', () => { state.theme = 'random'; updateEmojiBackground(); switchScreen('main-menu-screen'); });
 
             document.getElementById('dpad-toggle-button').addEventListener('click', (e) => { state.settings.dpad = !state.settings.dpad; e.currentTarget.classList.toggle('choice-selected', state.settings.dpad); document.getElementById('game-screen').classList.toggle('dpad-on', state.settings.dpad); setLanguage(state.settings.language); });
-            document.getElementById('sound-toggle-button').addEventListener('click', (e) => { state.settings.sound = !state.settings.sound; e.currentTarget.classList.toggle('choice-selected', state.settings.sound); if (!state.settings.sound) { audioManager.stop(); } else if (state.currentScreen !== 'game-screen') { audioManager.play(config.audio.menu, true); } setLanguage(state.settings.language); });
+            
+            document.getElementById('sound-toggle-button').addEventListener('click', (e) => { 
+                state.settings.sound = !state.settings.sound; 
+                e.currentTarget.classList.toggle('choice-selected', state.settings.sound); 
+                if (!state.settings.sound) { 
+                    audioManager.stop(); 
+                } else if (state.currentScreen !== 'game-screen') { 
+                    audioManager.play(config.audio.menu, true); 
+                } 
+                updateSoundButtonUI(); 
+            });
+
             document.getElementById('language-button').addEventListener('click', () => { const langKeys = Object.keys(config.languages); const nextLang = langKeys[(langKeys.indexOf(state.settings.language) + 1) % langKeys.length]; setLanguage(nextLang); });
             
             const dpadButtons = { 'dpad-up': 'ArrowUp', 'dpad-down': 'ArrowDown', 'dpad-left': 'ArrowLeft', 'dpad-right': 'ArrowRight' };
@@ -1551,25 +1643,12 @@
             mazeCanvas.addEventListener('touchstart', (e) => { if (hintScreenActive) { beginGameplay(e); } else { if (e.touches.length === 1) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; } } }, { passive: false });
             mazeCanvas.addEventListener('touchmove', (e) => { if (e.touches.length === 1) { if (!touchStartX || !touchStartY) return; e.preventDefault(); let dx = e.touches[0].clientX - touchStartX; let dy = e.touches[0].clientY - touchStartY; if (Math.abs(dx) > 20 || Math.abs(dy) > 20) { const key = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : (dy > 0 ? 'ArrowDown' : 'ArrowUp'); handleGameInput(key); touchStartX = null; touchStartY = null; } } }, { passive: false });
 
-            const loaderProgress = document.getElementById('loader-progress');
-            const loaderPercentage = document.getElementById('loader-percentage');
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 10;
-                if (progress > 100) progress = 100;
-                loaderProgress.style.background = `conic-gradient(var(--primary-pink) ${progress * 3.6}deg, #E0E0E0 0%)`;
-                loaderPercentage.textContent = `${progress}%`;
-                if (progress >= 100) { 
-                    clearInterval(interval); 
-                    setTimeout(() => {
-                        switchScreen('main-menu-screen');
-                        updateEmojiBackground();
-                    }, 250);
-                }
-            }, 50);
-            
-            const levelScreen = document.getElementById('level-selection-screen');
-            levelScreen.prepend(document.getElementById('total-stars-counter-levels'));
+            await preloadAssets();
+            document.getElementById('loader-progress').style.background = `conic-gradient(var(--primary-pink) 360deg, #E0E0E0 0%)`;
+            document.getElementById('loader-percentage').textContent = `100%`;
+            setTimeout(() => {
+                switchScreen('main-menu-screen');
+            }, 250);
         }
 
         initialize();
@@ -1577,3 +1656,4 @@
     </script>
 </body>
 </html>
+�
