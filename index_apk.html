@@ -1,0 +1,2213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Emoji Maze</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Палитра пастельных тонов */
+            --bg-light: #F5FAF8; 
+            --card-bg: #FFFFFF;
+            --primary-pink: #FECDD3; 
+            --primary-pink-dark: #FB92A4;
+            --primary-green: #D1E7DD; 
+            --primary-green-dark: #A2C4B4;
+            --primary-yellow: #FFFACD;
+            --primary-yellow-dark: #FADFAD;
+            --text-dark: #4B5563;
+            --text-secondary: #6B7280;
+            --outline: #E5E7EB;
+            --star-yellow: #FFD700;
+            --star-gray: #D1D5DB;
+            --pastel-red: #FCA5A5;
+            
+            --m3-state-layer-opacity: 0.08;
+            --focus-outline-color: #92fabc;
+        }
+
+        body, html {
+            height: 100%; width: 100%; margin: 0; padding: 0;
+            overflow: hidden;
+            font-family: 'Roboto', sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        .screen {
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0;
+            box-sizing: border-box; padding: 24px;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+            visibility: hidden;
+        }
+        .screen.active { 
+            display: flex; 
+            opacity: 1; 
+            visibility: visible;
+        }
+
+        .background-emojis {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+        .background-emojis span {
+            position: absolute;
+            font-size: 3rem;
+            opacity: 0;
+            will-change: transform, opacity;
+        }
+        .background-emojis span.animated {
+            animation: fadeInOut 12s infinite ease-in-out; 
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: scale(0.9); }
+            50% { opacity: 0.15; transform: scale(1); }
+        }
+        
+        /* Экран загрузки */
+        #loading-screen .loader-container { position: relative; width: 150px; height: 150px; }
+        #loading-screen .loader { width: 150px; height: 150px; border-radius: 50%; background: conic-gradient(var(--primary-pink) 0%, #E0E0E0 0%); }
+        #loading-screen .loader-inner { width: 120px; height: 120px; background: var(--bg-light); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--text-dark); }
+        
+        /* Базовый стиль панели меню */
+        .menu-panel {
+            background-color: var(--card-bg);
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            border-radius: 28px;
+            padding: 24px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px -5px rgba(75, 85, 99, 0.15), 0 4px 6px -2px rgba(75, 85, 99, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            position: relative;
+            z-index: 1;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+        .panel-header {
+            color: var(--text-dark);
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            flex-shrink: 0;
+        }
+        
+        /* Кнопки меню и карточки */
+        .menu-button, .mode-card, .level-card, .game-screen-icon-button {
+            -webkit-tap-highlight-color: transparent;
+             outline: none;
+        }
+
+        .selected {
+             outline: 4px solid var(--primary-green-dark) !important;
+             outline-offset: 3px;
+        }
+
+        .menu-button, .mode-card, .level-card {
+            background: var(--card-bg);
+            color: var(--text-dark);
+            border: 2px solid transparent;
+            border-radius: 16px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+            font-size: 1.1rem;
+            font-weight: 700;
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4);
+            position: relative;
+        }
+        .menu-button::after, .mode-card::after, .level-card::after { /* Слой состояния для наведения */
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--text-dark);
+            opacity: 0;
+            transition: opacity 0.2s ease-out;
+            border-radius: inherit;
+        }
+        .menu-button:hover::after, .mode-card:hover::after, .level-card:hover::after {
+            opacity: var(--m3-state-layer-opacity);
+        }
+        .menu-button:hover, .mode-card:hover, .level-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px -3px rgba(162, 196, 180, 0.5);
+        }
+        
+        .nav-item.selected, .modal-button.selected { 
+            transform: scale(1.05);
+            box-shadow: 0 7px 20px -3px rgba(162, 196, 180, 0.8) !important;
+        }
+        
+        /* Главное меню */
+        #main-menu-screen { position: relative; }
+        #main-menu-screen .main-menu-container { display: flex; flex-direction: column; align-items: center; gap: 20px; z-index: 1; }
+        #main-menu-screen .sub-menu-container { display: flex; gap: 20px; }
+        #play-button, #themes-button, #settings-button, #sound-toggle-button { background: var(--card-bg); color: var(--text-dark); border-radius: 50%; box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4); transition: transform 0.2s ease, box-shadow 0.2s ease; padding: 0; flex-grow: 0; border: none; display: flex; align-items: center; justify-content: center; }
+        #themes-button:hover, #settings-button:hover, #sound-toggle-button:hover { transform: scale(1.1); box-shadow: 0 6px 20px -2px rgba(162, 196, 180, 0.5); }
+        @keyframes play-pulse { 0% { transform: scale(1.0); box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4); } 50% { transform: scale(1.1); box-shadow: 0 8px 25px -2px rgba(162, 196, 180, 0.6); } 100% { transform: scale(1.0); box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4); } }
+        #play-button:hover { animation: play-pulse 1.5s infinite ease-in-out; }
+        #play-button::after, #themes-button::after, #settings-button::after, #sound-toggle-button::after { display: none; }
+        #play-button { width: 140px; height: 140px; }
+        #themes-button, #settings-button, #sound-toggle-button { width: 90px; height: 90px; }
+        #play-button .play-icon, #themes-button .card-icon, #settings-button .card-icon, #sound-toggle-button .card-icon { margin: 0; }
+        #play-button .play-icon { font-size: 5rem; }
+        #themes-button .card-icon, #settings-button .card-icon, #sound-toggle-button .card-icon { font-size: 3rem; }
+        #main-menu-screen .nav-item.selected { box-shadow: 0 6px 20px -2px rgba(162, 196, 180, 0.8); transform: scale(1.05); border: none; }
+        
+        /* Счетчик звезд */
+        #total-stars-counter {
+            position: absolute;
+            top: 0;
+            right: 0;
+            padding: calc(env(safe-area-inset-top, 10px)) 24px 0;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            z-index: 10;
+        }
+        .stars-display{
+            background-color: var(--card-bg);
+            padding: 8px 16px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4);
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Панели подменю */
+         #game-mode-screen, #settings-screen, #themes-screen, #level-selection-screen {
+            justify-content: center;
+            padding: 0;
+            position: relative;
+        }
+        .sub-screen-top-bar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: calc(env(safe-area-inset-top, 10px) + 10px) 24px 10px;
+            box-sizing: border-box;
+            z-index: 11;
+        }
+        .sub-screen-top-bar .back-button {
+            position: static;
+            height: clamp(44px, 100%, 56px);
+            width: clamp(44px, 100%, 56px);
+            aspect-ratio: 1/1;
+            font-size: 1.5rem;
+        }
+       
+        #game-mode-screen .menu-panel,
+        #settings-screen .menu-panel,
+        #themes-screen .menu-panel {
+            background: none;
+            box-shadow: none;
+        }
+
+        .mode-card {
+            flex-direction: column;
+            gap: 8px;
+            padding-bottom: 32px;
+        }
+
+        .mode-percentage {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+       
+        /* Экран выбора уровня */
+        #level-selection-screen {
+            justify-content: flex-end; /* Align panel to bottom */
+        }
+        #level-selection-screen .menu-panel {
+            height: calc(100% - 80px - env(safe-area-inset-top, 10px));
+            width: 100%;
+            max-height: 100%;
+            justify-content: center;
+            background: none;
+            box-shadow: none;
+            padding-top: 80px;
+        }
+        #level-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            max-width: 550px;
+            margin: 0 auto;
+            gap: 16px;
+            width: 100%;
+            padding: 10px;
+            flex-grow: 1;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+        .level-card {
+            background-color: var(--card-bg);
+            border: 2px solid var(--outline);
+            flex-direction: column;
+            aspect-ratio: 1 / 1;
+            padding: 8px;
+            font-size: 1.8rem;
+            min-height: 80px;
+        }
+        .level-number { margin-bottom: 4px; }
+        .level-stars { font-size: 0.8rem; height: 1em; line-height: 1; }
+        .level-stars .star { color: var(--star-gray); }
+        .level-stars .star.filled { color: var(--star-yellow); }
+
+        /* Игровой экран */
+        #game-screen { padding: 0; justify-content: space-between; }
+        #game-top-ui {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            box-sizing: border-box;
+            padding-top: calc(env(safe-area-inset-top, 10px) + 10px);
+        }
+        .top-left-buttons { display: flex; align-items: center; gap: 15px; flex: 1; }
+        .top-right-ui { display: flex; align-items: center; gap: 15px; flex: 1; justify-content: flex-end;}
+        #timer-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+        }
+
+        .game-button-panel {
+            background-color: var(--card-bg);
+            border-radius: 24px;
+            box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4);
+            display: flex;
+            align-items: center;
+            padding: 4px;
+            gap: 8px;
+        }
+        .game-button-panel .game-screen-icon-button {
+            background: transparent;
+            box-shadow: none;
+            color: var(--text-dark);
+            width: 44px;
+            height: 44px;
+        }
+        .game-button-panel .game-screen-icon-button:hover {
+            background-color: rgba(0,0,0,0.05);
+            transform: scale(1.1);
+            box-shadow: none;
+        }
+
+        #game-top-ui .game-screen-icon-button {
+            position: static;
+            width: clamp(40px, 100%, 48px);
+            height: clamp(40px, 100%, 48px);
+            font-size: 1.5rem;
+        }
+        #game-top-ui #decor-counter, #game-top-ui #timer-display { position: static; }
+        
+        .game-screen-icon-button { 
+            position: relative; 
+            border-radius: 50%; 
+            padding: 0; 
+            z-index: 100; 
+            border: none; 
+            background: var(--card-bg); 
+            color: var(--text-dark); 
+            box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4); 
+            cursor: pointer; 
+            transition: transform 0.2s ease, box-shadow 0.2s ease; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .game-screen-icon-button:hover { transform: scale(1.1); box-shadow: 0 6px 20px -2px rgba(162, 196, 180, 0.5); }
+        #restart-game-button:hover { transform: scale(1.1) rotate(25deg); }
+        
+        #game-area-wrapper { width: 100%; height: 90%; margin: 0 auto; display: flex; align-items: center; justify-content: center; }
+        #maze-wrapper { position: relative; width: 100%; height:100%; min-height: 0; display: flex; align-items: center; justify-content: center; }
+        #maze-container { position: relative; z-index: 2; max-width: 100%; max-height: 100%; }
+        #maze-canvas { border-radius: 16px; display: block; max-width: 100%; max-height: 100%; }
+        
+        #dpad-container { 
+            width: 100%;
+            height: 5%;
+            min-height: 50px;
+            flex-shrink: 0;
+            display: none; 
+            flex-direction: row; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 10px; 
+            padding: 5px 0; 
+        }
+        #game-screen.dpad-on #dpad-container { display: flex; }
+        #game-screen.dpad-on #game-area-wrapper { height: 85%; }
+        .dpad-btn { width: 60px; height: 60px; background-color: var(--card-bg); color: var(--text-dark); border: none; border-radius: 50%; font-size: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); transition: transform 0.1s ease; }
+        .dpad-btn:active { transform: scale(0.95); background-color: var(--primary-green); }
+        #dpad-left { order: 1; } #dpad-right { order: 2; } #dpad-down { order: 3; } #dpad-up { order: 4; }
+        
+        #dpad-toggle-button .dpad-status {
+            font-size: 1.2rem;
+            margin-left: auto;
+            padding-left: 8px;
+        }
+        
+        #decor-counter { background: var(--card-bg); padding: 8px 16px; border-radius: 12px; font-size: 1.5rem; font-weight: 700; color: var(--text-dark); box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4); display: none; }
+        #timer-display {
+            font-weight: 700;
+            color: var(--text-dark);
+            height: 100%;
+            display: none;
+            align-items: center;
+            background-color: var(--card-bg);
+            padding: 8px 16px;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px -2px rgba(162, 196, 180, 0.4);
+            font-size: 1.5rem;
+            gap: 8px;
+        }
+        #timer-display.warning {
+            color: #E53E3E;
+            animation: pulse-red 1s infinite;
+        }
+        @keyframes pulse-red {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        @keyframes blink {
+          50% { opacity: 0; }
+        }
+        .timer-zero-blink {
+            animation: blink 1s step-end infinite;
+        }
+
+
+        /* Модальные окна */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(63, 72, 75, 0.8); display: flex; align-items: center; justify-content: center; z-index: 200; opacity: 0; transition: opacity 0.3s ease, visibility 0s 0.3s; visibility: hidden; pointer-events: none; }
+        .modal-overlay.visible { opacity: 1; visibility: visible; transition: opacity 0.3s ease, visibility 0s; pointer-events: auto; }
+        .modal-content { background: var(--card-bg); border: none; color: var(--text-dark); padding: 24px; border-radius: 28px; text-align: center; width: 90%; max-width: 400px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); transform: scale(0.9); transition: transform 0.3s ease-out; position: relative; }
+        .modal-overlay.visible .modal-content { transform: scale(1); }
+        .modal-title { font-size: 2.5rem; color: var(--text-dark); margin-bottom: 8px; font-weight: 900;}
+        .modal-text { font-size: 1rem; color: var(--text-secondary); }
+        .animation-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; pointer-events: none; }
+        .confetti { position: absolute; width: 10px; height: 10px; background-color: #f00; opacity: 0; animation: fall 3s ease-out forwards; }
+        @keyframes fall { 0% { transform: translateY(-20px) rotate(0deg); opacity: 1; } 100% { transform: translateY(150px) rotate(720deg); opacity: 0; } }
+        .modal-buttons { display: flex; justify-content: center; align-items: center; gap: 16px; margin-top: 24px; }
+        .modal-buttons .menu-button { width: auto; max-width: none; }
+        .emoji-button {
+            font-size: 2rem;
+            padding: 8px 16px !important;
+            text-shadow: 0 0 4px white, 0 0 8px white;
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .emoji-button:hover {
+            transform: scale(1.1);
+        }
+        #victory-modal #next-level-button:not(:hover) {
+             transform: scale(1.25);
+        }
+         #victory-modal #next-level-button:hover {
+             transform: scale(1.35);
+        }
+        #star-rating-container { display: flex; justify-content: center; gap: 10px; margin: 16px 0; }
+        .star { font-size: 2.5rem; transform: scale(0); opacity: 0; animation: popIn 0.5s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
+        .star.yellow { color: var(--star-yellow); } .star.gray { color: var(--star-gray); }
+        .star:nth-child(2) { animation-delay: 0.2s; } .star:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes popIn { to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body>
+    <div id="loading-screen" class="screen active">
+        <div class="loader-container"><div class="loader" id="loader-progress"></div><div class="loader-inner"><span id="loader-percentage">0%</span></div></div>
+    </div>
+
+    <div id="main-menu-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div id="total-stars-counter"><div class="stars-display">⭐ 0</div></div>
+        <div class="main-menu-container">
+            <button id="play-button" class="menu-button nav-item" data-nav-index="0"><span class="play-icon">▶️</span></button>
+            <div class="sub-menu-container">
+                 <button id="themes-button" class="menu-button nav-item" data-nav-index="1"><span class="card-icon">🎨</span></button>
+                 <button id="settings-button" class="menu-button nav-item" data-nav-index="2"><span class="card-icon">⚙️</span></button>
+                 <button id="sound-toggle-button" class="menu-button nav-item" data-nav-index="3"><span class="card-icon">🔊</span></button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-mode-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div class="sub-screen-top-bar">
+            <button class="game-screen-icon-button back-button nav-item" data-target-screen="main-menu-screen" data-nav-index="0">🏠</button>
+            <div class="stars-clone stars-display">⭐ 0</div>
+        </div>
+        <div class="menu-panel">
+            <button id="mode-classic" class="mode-card nav-item" data-nav-index="1" data-mode="classic">
+                <span class="card-icon">🗺️</span> <span data-lang="classic">Классический</span>
+                <div class="mode-percentage">0%</div>
+            </button>
+            <button id="mode-flashlight" class="mode-card nav-item" data-nav-index="2" data-mode="flashlight">
+                <span class="card-icon">🔦</span> <span data-lang="flashlight">Фонарик</span>
+                <div class="mode-percentage">0%</div>
+            </button>
+            <button id="mode-ghost" class="mode-card nav-item" data-nav-index="3" data-mode="ghost">
+                <span class="card-icon">👻</span> <span data-lang="ghost">Привидение</span>
+                <div class="mode-percentage">0%</div>
+            </button>
+            <button id="mode-timer" class="mode-card nav-item" data-nav-index="4" data-mode="timer">
+                <span class="card-icon">⏰</span> <span data-lang="timer">Таймер</span>
+                <div class="mode-percentage">0%</div>
+            </button>
+            <button id="mode-all-in-one" class="mode-card nav-item" data-nav-index="5" data-mode="all-in-one">
+                <span class="card-icon">🗺️🔦👻⏰</span> <span data-lang="all_in_one">Всё в одном</span>
+                <div class="mode-percentage">0%</div>
+            </button>
+            <button id="mode-random" class="mode-card nav-item" data-nav-index="6" data-mode="random">
+                <span class="card-icon">🎲</span> <span data-lang="random_mode">Случайный</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="level-selection-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div class="sub-screen-top-bar">
+            <button class="game-screen-icon-button back-button nav-item" data-target-screen="game-mode-screen" data-nav-index="0">⬅️</button>
+            <div id="total-stars-counter-levels" class="stars-clone stars-display">⭐ 0</div>
+        </div>
+        <div class="menu-panel">
+            <div id="level-selection-grid"></div>
+        </div>
+    </div>
+
+    <div id="settings-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div class="sub-screen-top-bar">
+            <button class="game-screen-icon-button back-button nav-item" data-target-screen="main-menu-screen" data-nav-index="0">🏠</button>
+            <div class="stars-clone stars-display">⭐ 0</div>
+        </div>
+        <div class="menu-panel">
+            <button id="dpad-toggle-button" class="menu-button nav-item" data-nav-index="1" style="justify-content: flex-start;">
+                <span>🕹️ D-pad</span>
+                <span class="dpad-status"></span>
+            </button>
+            <button id="language-button" class="menu-button nav-item" data-nav-index="2" style="justify-content: flex-start;">
+                <span class="card-icon">🌐</span><span class="lang-text" style="margin-left: 12px;"></span>
+            </button>
+            <button id="reset-progress-button" class="menu-button nav-item" data-nav-index="3" style="background-color: var(--primary-pink); justify-content: flex-start;">
+                <span data-lang="reset_progress"></span><span style="margin-left: 12px;">🗑️</span>
+            </button>
+        </div>
+    </div>
+    
+    <div id="themes-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div class="sub-screen-top-bar">
+             <button class="game-screen-icon-button back-button nav-item" data-target-screen="main-menu-screen" data-nav-index="0">🏠</button>
+             <div class="stars-clone stars-display">⭐ 0</div>
+        </div>
+        <div class="menu-panel">
+             <button id="random-theme-button" class="menu-button nav-item" data-nav-index="1" data-theme-key="random" tabindex="0"><span data-lang="random_theme"></span></button>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen">
+        <div id="game-top-ui">
+             <div class="top-left-buttons">
+                 <div class="game-button-panel">
+                     <button id="return-menu-button" class="game-screen-icon-button">🏠</button>
+                     <button id="restart-game-button" class="game-screen-icon-button">🔄</button>
+                     <button id="hint-button" class="game-screen-icon-button">💡</button>
+                 </div>
+             </div>
+             <div id="timer-container">
+                <div id="timer-display"></div>
+             </div>
+             <div class="top-right-ui">
+                <div id="decor-counter"></div>
+             </div>
+        </div>
+        
+        <div id="game-area-wrapper">
+            <div id="maze-wrapper">
+                 <div id="maze-container"><canvas id="maze-canvas"></canvas></div>
+            </div>
+        </div>
+
+        <div id="dpad-container">
+            <button id="dpad-left" class="dpad-btn">⬅️</button>
+            <button id="dpad-right" class="dpad-btn">➡️</button>
+            <button id="dpad-down" class="dpad-btn">⬇️</button>
+            <button id="dpad-up" class="dpad-btn">⬆️</button>
+        </div>
+    </div>
+    
+    <div id="victory-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="animation-container"></div>
+            <h1 class="modal-title">🎉</h1>
+            <div id="star-rating-container"></div>
+            <div class="modal-buttons">
+                <button id="menu-button-victory" class="menu-button emoji-button modal-button" data-modal-nav-index="0">🏠</button>
+                <button id="next-level-button" class="menu-button emoji-button modal-button" data-modal-nav-index="1">▶️</button>
+                <button id="retry-level-button-victory" class="menu-button emoji-button modal-button" data-modal-nav-index="2">🔄</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="confirm-exit-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title" data-lang="confirm_exit_title"></h2>
+            <p class="modal-text" data-lang="confirm_exit_text"></p>
+            <div class="modal-buttons">
+                <button id="confirm-exit-no" class="menu-button emoji-button modal-button" data-modal-nav-index="0">❌</button>
+                <button id="confirm-exit-yes" class="menu-button emoji-button modal-button" data-modal-nav-index="1">✅</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirm-reset-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title" data-lang="confirm_reset_title"></h2>
+            <p class="modal-text" data-lang="confirm_reset_text"></p>
+            <div class="modal-buttons">
+                <button id="confirm-reset-no" class="menu-button emoji-button modal-button" data-modal-nav-index="0">❌</button>
+                <button id="confirm-reset-yes" class="menu-button emoji-button modal-button" data-modal-nav-index="1">✅</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tv-back-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title">💤</h2>
+            <div class="modal-buttons">
+                <button id="tv-back-home" class="menu-button emoji-button modal-button" data-modal-nav-index="0">🏠</button>
+                <button id="tv-back-restart" class="menu-button emoji-button modal-button" data-modal-nav-index="1">🔄</button>
+                <button id="tv-back-hint" class="menu-button emoji-button modal-button" data-modal-nav-index="2">💡</button>
+                <button id="tv-back-cancel" class="menu-button emoji-button modal-button" data-modal-nav-index="3">❌</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const config = {
+            backgrounds: [
+                '/assets/images/abstract-design-element-pink-3595.png',
+                '/assets/images/abstract-design-element-blue-purple-3588.png',
+                '/assets/images/abstract-design-element-pink-3599.png',
+                '/assets/images/abstract-design-element-pink-orange-3585.png',
+                '/assets/images/abstract-design-element-purple-3557.png',
+                '/assets/images/abstract-design-element-purple-3560.png',
+                '/assets/images/abstract-design-element-purple-3569.png',
+                '/assets/images/abstract-design-element-purple-3570.png',
+                '/assets/images/abstract-design-element-shape-purple-3463.png',
+                '/assets/images/abstract-design-element-shape-yellow-3472.png',
+                '/assets/images/abstract-design-element-shape-yellow-3474.png',
+                '/assets/images/abstract-design-element-yellow-orange-3575.png',
+                '/assets/images/abstract-design-element-yellow-orange-3577.png',
+                '/assets/images/design-element-wave-blue-3689.png'
+            ],
+            levels: [
+                { h: 7,  w: 4,  bonuses: 0, visibility: { h: 2, w: 2 }, timer: 30,  ghosts: 1 },
+                { h: 5,  w: 5,  bonuses: 0, visibility: { h: 2, w: 2 }, timer: 30,  ghosts: 1 },
+                { h: 8,  w: 5,  bonuses: 0, visibility: { h: 2, w: 2 }, timer: 30,  ghosts: 1 },
+                { h: 6,  w: 5,  bonuses: 2, visibility: { h: 3, w: 3 }, timer: 30,  ghosts: 1 },
+                { h: 6,  w: 6,  bonuses: 2, visibility: { h: 3, w: 3 }, timer: 30,  ghosts: 1 },
+                { h: 9,  w: 6,  bonuses: 3, visibility: { h: 3, w: 3 }, timer: 60,  ghosts: 1 },
+                { h: 7,  w: 7,  bonuses: 3, visibility: { h: 3, w: 3 }, timer: 60,  ghosts: 1 },
+                { h: 10, w: 7,  bonuses: 3, visibility: { h: 4, w: 4 }, timer: 60,  ghosts: 1 },
+                { h: 8,  w: 8,  bonuses: 4, visibility: { h: 4, w: 4 }, timer: 60,  ghosts: 1 },
+                { h: 8,  w: 11, bonuses: 4, visibility: { h: 4, w: 4 }, timer: 60,  ghosts: 1 },
+                { h: 9,  w: 9,  bonuses: 4, visibility: { h: 4, w: 4 }, timer: 90,  ghosts: 1 },
+                { h: 12, w: 9,  bonuses: 5, visibility: { h: 5, w: 5 }, timer: 90,  ghosts: 1 },
+                { h: 10, w: 10, bonuses: 5, visibility: { h: 5, w: 5 }, timer: 90,  ghosts: 1 },
+                { h: 10, w: 13, bonuses: 5, visibility: { h: 5, w: 5 }, timer: 90,  ghosts: 1 },
+                { h: 11, w: 11, bonuses: 5, visibility: { h: 5, w: 5 }, timer: 90,  ghosts: 1 },
+                { h: 14, w: 11, bonuses: 6, visibility: { h: 6, w: 6 }, timer: 90,  ghosts: 1 },
+                { h: 12, w: 12, bonuses: 6, visibility: { h: 6, w: 6 }, timer: 90,  ghosts: 1 },
+                { h: 15, w: 12, bonuses: 6, visibility: { h: 6, w: 6 }, timer: 90,  ghosts: 1 },
+                { h: 13, w: 13, bonuses: 6, visibility: { h: 6, w: 6 }, timer: 90,  ghosts: 1 },
+                { h: 14, w: 14, bonuses: 7, visibility: { h: 7, w: 7 }, timer: 90,  ghosts: 1 },
+                { h: 16, w: 14, bonuses: 8, visibility: { h: 6, w: 6 }, timer: 99,  ghosts: 2 },
+                { h: 14, w: 14, bonuses: 8, visibility: { h: 6, w: 6 }, timer: 99,  ghosts: 2 },
+                { h: 13, w: 17, bonuses: 8, visibility: { h: 6, w: 6 }, timer: 99,  ghosts: 2 },
+                { h: 17, w: 13, bonuses: 8, visibility: { h: 6, w: 6 }, timer: 99,  ghosts: 2 },
+                { h: 16, w: 16, bonuses: 7, visibility: { h: 7, w: 7 }, timer: 99,  ghosts: 2 },
+                { h: 17, w: 14, bonuses: 8, visibility: { h: 6, w: 7 }, timer: 99,  ghosts: 2 },
+                { h: 16, w: 16, bonuses: 8, visibility: { h: 6, w: 7 }, timer: 99,  ghosts: 2 },
+                { h: 18, w: 16, bonuses: 8, visibility: { h: 6, w: 7 }, timer: 99,  ghosts: 2 },
+                { h: 17, w: 17, bonuses: 8, visibility: { h: 6, w: 7 }, timer: 99,  ghosts: 2 },
+                { h: 19, w: 15, bonuses: 9, visibility: { h: 7, w: 7 }, timer: 99,  ghosts: 3 }
+            ],
+            themes: {
+                jungle: { name: 'Jungle', player: '🐒', finish: '🍌', walls: ['🌳', '🍃', '🌴', '🌸'], decor: ['🌺', '🦋'], gradient: ['#D4F0C4', '#A0D8A0']},
+                antarctica: { name: 'Antarctica', player: '🐧', finish: '❤️', walls: ['❄️', '🧊'], decor: ['🧊', '❄️'], gradient: ['#E6F3FB', '#B0C4DE']},
+                catsAndMice: { name: 'Cats & Mice', player: '🐱', finish: '🐭', walls: ['🌲', '🏠', '🌿', '🐾'], decor: ['🧶', '🧀'], gradient: ['#FFFACD', '#F5DEB3']},
+                snail: { name: 'Snail', player: '🐌', finish: '🥬', walls: ['🌲', '🌸', '🍄', '💧'], decor: ['🐞', '🌼'], gradient: ['#DFF0D8', '#BDECB6']},
+                football: { name: 'Football', player: '⚽', finish: '🥅', walls: ['📣', '🏆', '👟'], decor: ['🏟️', '🏅'], gradient: ['#D9EAD3', '#B6D7A8']},
+                sea: { name: 'Sea', player: '🐬', finish: '⭐', walls: ['🌊', '⛵', '🏝️', '🏖️'], decor: ['🐠', '🦀', '🐚'], gradient: ['#B2EBF2', '#81D4FA']},
+                desert: { name: 'Desert', player: '🐪', finish: '🌴', walls: ['🌵', '🏜️', '⛰️'], decor: ['🌵'], gradient: ['#FADDAA', '#EDC967']}
+            },
+            audio: {
+                menu: '/assets/audio/light.ogg',
+                game: [ '/assets/audio/kinderszenen.ogg', '/assets/audio/etude8.ogg', '/assets/audio/dogsandcats.ogg', '/assets/audio/theskaterswaltz.ogg' ],
+                victorySfx: ['/assets/audio/sfx-piano-bar2.ogg', '/assets/audio/sfx-sfx-strings7.ogg'],
+                collectSfx: '/assets/audio/sfx-magic15.ogg',
+                defeatSfx: '/assets/audio/sfx-mouth10.ogg',
+                timerWarningSfx: '/assets/audio/sfx-clock.mp3',
+                timerDefeatSfx: '/assets/audio/sfx-cartoons19.mp3'
+            },
+            languageNames: {
+                ru: 'Русский',
+                en: 'English'
+            },
+            languages: {
+                ru: {
+                    settings: 'Настройки', themes: 'Темы', random_theme: 'Случайная тема', 
+                    classic: 'Классический', flashlight: 'Фонарик', ghost: 'Привидение', timer: 'Таймер', all_in_one: 'Всё в одном', random_mode: 'Случайный',
+                    menu: 'Меню', retry: 'Повторить', next_level: 'Следующий',
+                    confirm_exit_title: 'Выйти?', confirm_exit_text: 'Прогресс уровня не будет сохранен.',
+                    select_mode: 'Выберите режим', reset_progress: 'Сбросить прогресс',
+                    confirm_reset_title: 'Сбросить прогресс?', confirm_reset_text: 'Все ваши звезды будут удалены. Это действие необратимо.',
+                    jungle: 'Джунгли', antarctica: 'Антарктика', catsAndMice: 'Кошки-мышки', snail: 'Улитка', football: 'Футбол', sea: 'Море', desert: 'Пустыня'
+                },
+                en: {
+                    settings: 'Settings', themes: 'Themes', random_theme: 'Random Theme', 
+                    classic: 'Classic', flashlight: 'Flashlight', ghost: 'Ghost', timer: 'Timer', all_in_one: 'All in One', random_mode: 'Random',
+                    menu: 'Menu', retry: 'Retry', next_level: 'Next Level',
+                    confirm_exit_title: 'Exit?', confirm_exit_text: 'Level progress will be lost.',
+                    select_mode: 'Select Mode', reset_progress: 'Reset Progress',
+                    confirm_reset_title: 'Reset progress?', confirm_reset_text: 'All your stars will be deleted. This action is irreversible.',
+                    jungle: 'Jungle', antarctica: 'Antarctica', catsAndMice: 'Cats & Mice', snail: 'Snail', football: 'Football', sea: 'Sea', desert: 'Desert'
+                }
+            }
+        };
+
+        const state = {
+            currentScreen: 'loading-screen',
+            settings: { dpad: false, sound: true, language: 'en' },
+            progress: { classic: {}, flashlight: {}, ghost: {}, timer: {}, "all-in-one": {} },
+            theme: 'random', 
+            gameMode: 'classic',
+            currentLevel: 0,
+            dpadNavActive: false,
+            mazeWidth: 4,
+            mazeHeight: 4,
+            isGameActive: false, 
+            isAnimating: false,
+            playerIsDefeated: false,
+            isTimerDefeat: false,
+            defeatAnimation: { progress: 0, bubbles: [] },
+            gameTimer: { id: null, timeLeft: 0, isPaused: false },
+            currentNavIndex: 0, navigableItems: [],
+            modalNavIndex: 0,
+            playerPos: {x: 0, y: 0},
+            startPos: {x: 0, y: 0},
+            finishPos: {x: 0, y: 0},
+            ghosts: [],
+            startGhosts: [],
+            playerStepCount: 0,
+            hint: { path: [], visible: false, timer: null },
+            totalDecor: 0,
+            collectedDecor: 0,
+            wallColor: '#4B5563', 
+        };
+        
+        const audioManager = {
+            currentTrack: null,
+            warningSfx: null,
+            musicWasPlaying: false,
+            play(trackUrl, loop = false) { if (!state.settings.sound) return; const trackName = trackUrl.split('/').pop(); if (this.currentTrack && this.currentTrack.src.endsWith(trackName)) { if(this.currentTrack.paused) this.currentTrack.play().catch(e => {}); return; } this.stop(); this.currentTrack = new Audio(trackUrl); this.currentTrack.loop = loop; const playPromise = this.currentTrack.play(); if (playPromise !== undefined) { playPromise.catch(() => { const startAudio = () => { if (state.settings.sound) this.currentTrack?.play().catch(e=>{}); }; window.addEventListener('click', startAudio, { once: true }); }); } },
+            stop() { if (this.currentTrack) { this.currentTrack.pause(); this.currentTrack.onended = null; this.currentTrack.src = ''; this.currentTrack = null; } },
+            playSfx(trackUrl) { if (!state.settings.sound) return; const sfx = new Audio(trackUrl); sfx.play().catch(e => {}); },
+            playWarningSfx(trackUrl, loop = true) { if (!state.settings.sound) return; this.stopWarningSfx(); this.warningSfx = new Audio(trackUrl); this.warningSfx.loop = loop; this.warningSfx.play().catch(e => {}); },
+            stopWarningSfx() { if (this.warningSfx) { this.warningSfx.pause(); this.warningSfx.src = ''; this.warningSfx = null; } },
+            playGameMusic() { this.stop(); let playlist = [...config.audio.game]; const playNext = () => { if (!state.settings.sound || state.currentScreen !== 'game-screen') return; if (playlist.length === 0) playlist = [...config.audio.game]; const track = playlist.splice(Math.floor(Math.random() * playlist.length), 1)[0]; this.play(track, false); if(this.currentTrack) this.currentTrack.onended = playNext; }; playNext(); }
+        };
+
+        const victoryModal = document.getElementById('victory-modal');
+        const confirmExitModal = document.getElementById('confirm-exit-modal');
+        const confirmResetModal = document.getElementById('confirm-reset-modal');
+        const tvBackModal = document.getElementById('tv-back-modal');
+        const mazeCanvas = document.getElementById('maze-canvas');
+        const mazeCtx = mazeCanvas.getContext('2d');
+        const totalStarsCounter = document.getElementById('total-stars-counter');
+        const backgroundEmojis = document.querySelector('.background-emojis');
+        const loadedBackgroundImages = [];
+        const timerDisplay = document.getElementById('timer-display');
+
+        let mazeGrid, initialMazeGrid, currentTheme, cellSize, currentBgImage;
+        let hintScreenActive = false, touchStartX, touchStartY;
+        let animationFrameId, gameStartKeyListener;
+
+        let displayPos = { x: 0, y: 0 }, targetPos = { x: 0, y: 0 };
+        const ANIMATION_SPEED = 0.4;
+        let moveInterval = null;
+
+        function saveProgress() {
+            try {
+                localStorage.setItem('emojiMazeProgress', JSON.stringify(state.progress));
+            } catch (e) {
+                console.error("Failed to save progress:", e);
+            }
+        }
+        
+        function loadProgress() {
+            try {
+                const savedProgress = localStorage.getItem('emojiMazeProgress');
+                if (savedProgress) {
+                    const parsed = JSON.parse(savedProgress);
+                    if(parsed.classic && parsed.flashlight && parsed.ghost && parsed.timer) {
+                       state.progress = parsed;
+                       if(!state.progress['all-in-one']) state.progress['all-in-one'] = {};
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load progress:", e);
+                state.progress = { classic: {}, flashlight: {}, ghost: {}, timer: {}, 'all-in-one': {} };
+            }
+        }
+
+        function updateTotalStarsCounter() {
+            const totalStars = Object.values(state.progress).flatMap(mode => Object.values(mode)).reduce((sum, stars) => sum + stars, 0);
+            const counterText = `⭐ ${totalStars}`;
+            document.querySelector('#total-stars-counter .stars-display').innerHTML = counterText;
+            document.querySelectorAll('.stars-clone').forEach(el => el.innerHTML = counterText);
+        }
+
+        function resetProgress() {
+            state.progress = { classic: {}, flashlight: {}, ghost: {}, timer: {}, 'all-in-one': {} };
+            saveProgress();
+            updateTotalStarsCounter();
+            updateModeCompletionPercentage();
+            if (state.currentScreen === 'level-selection-screen') {
+                showLevelSelectionScreen(state.gameMode);
+            }
+        }
+        
+        function stopGame() {
+            stopGameLoop();
+            clearInterval(state.gameTimer.id);
+            state.gameTimer.id = null;
+            state.gameTimer.isPaused = false;
+            audioManager.stopWarningSfx();
+            timerDisplay.style.display = 'none';
+            if (gameStartKeyListener) {
+                document.removeEventListener('keydown', gameStartKeyListener);
+                gameStartKeyListener = null;
+            }
+        }
+
+        function switchScreen(screenId) {
+            stopGame();
+            state.dpadNavActive = false;
+            const currentScreenEl = document.getElementById(state.currentScreen);
+            const nextScreenEl = document.getElementById(screenId);
+            if (currentScreenEl) currentScreenEl.classList.remove('active');
+            if (nextScreenEl) nextScreenEl.classList.add('active');
+            state.currentScreen = screenId;
+            
+            totalStarsCounter.style.display = screenId === 'main-menu-screen' ? 'flex' : 'none';
+            
+            if (screenId === 'main-menu-screen' || screenId === 'game-mode-screen' || screenId === 'settings-screen' || screenId === 'themes-screen' || screenId === 'level-selection-screen') {
+                updateTotalStarsCounter();
+                updateEmojiBackground();
+            }
+
+            if(screenId === 'game-mode-screen') {
+                updateModeCompletionPercentage();
+            }
+
+            document.getElementById('game-screen').classList.toggle('dpad-on', state.settings.dpad);
+
+            setupNavigation();
+            
+            if (screenId === 'game-screen') {
+                audioManager.playGameMusic();
+            } else {
+                audioManager.play(config.audio.menu, true);
+            }
+        }
+        
+        function setupNavigation() {
+            const activeScreen = document.getElementById(state.currentScreen);
+            if (!activeScreen) return;
+
+            const allNavItems = Array.from(activeScreen.querySelectorAll('.nav-item, .back-button'));
+
+            state.navigableItems = allNavItems
+                .filter(item => !item.classList.contains('disabled'))
+                .sort((a, b) => (parseInt(a.dataset.navIndex || 999)) - (parseInt(b.dataset.navIndex || 999)));
+
+            if(state.navigableItems.length > 0) {
+                 const hasBackButton = state.navigableItems.some(item => parseInt(item.dataset.navIndex) === 0);
+                 state.currentNavIndex = (hasBackButton && state.navigableItems.length > 1) ? 1 : 0;
+            }
+            updateNavSelection();
+        }
+
+        function ensureSelectedItemIsVisible() {
+            if (!state.navigableItems.length) return;
+            const selectedItem = state.navigableItems[state.currentNavIndex];
+            if (selectedItem) {
+                selectedItem.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+            }
+        }
+
+        function updateNavSelection() {
+            state.navigableItems.forEach((item, index) => {
+                const shouldBeSelected = (index === state.currentNavIndex) && state.dpadNavActive;
+                item.classList.toggle('selected', shouldBeSelected);
+            });
+            if (state.dpadNavActive) {
+                ensureSelectedItemIsVisible();
+            }
+        }
+        
+        function handleModalNav(e, modal) {
+            const items = Array.from(modal.querySelectorAll('.modal-button'));
+            if (!items.length) return;
+
+            items.forEach(item => item.classList.remove('selected'));
+            
+            if (e.key === 'ArrowRight') {
+                state.modalNavIndex = (state.modalNavIndex + 1) % items.length;
+            } else if (e.key === 'ArrowLeft') {
+                state.modalNavIndex = (state.modalNavIndex - 1 + items.length) % items.length;
+            } else if (e.key === 'Enter') {
+                items[state.modalNavIndex].click();
+            }
+            
+            items[state.modalNavIndex].classList.add('selected');
+            e.preventDefault();
+        }
+
+
+        function handleGameScreenKeyDown(e) {
+            const activeModal = document.querySelector('.modal-overlay.visible');
+            if (activeModal) {
+                 handleModalNav(e, activeModal);
+                 return;
+            }
+
+            if (hintScreenActive || state.playerIsDefeated) return;
+
+            const gameMoveKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd'];
+
+            if (gameMoveKeys.includes(e.key)) {
+                e.preventDefault();
+                handleGameInput(e.key);
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                showModal(tvBackModal);
+                state.isGameActive = false;
+            }
+        }
+
+        function handleGlobalKeyDown(e) {
+            const activeModal = document.querySelector('.modal-overlay.visible');
+            if (activeModal) {
+                handleModalNav(e, activeModal);
+                return;
+            }
+
+            if (!state.dpadNavActive) {
+                const navKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'];
+                if(navKeys.includes(e.key)) {
+                    state.dpadNavActive = true;
+                }
+            }
+
+            // Isolate game screen controls
+            if (state.currentScreen === 'game-screen') {
+                handleGameScreenKeyDown(e);
+                return;
+            }
+            
+            if (hintScreenActive || state.playerIsDefeated || !state.navigableItems.length) return;
+
+            let handled = false;
+            
+            // Get screen-specific layout info
+            const isGridScreen = state.currentScreen === 'level-selection-screen';
+            const isMainMenu = state.currentScreen === 'main-menu-screen';
+            const isVerticalListWithBackBtn = ['game-mode-screen', 'settings-screen', 'themes-screen'].includes(state.currentScreen);
+
+            let gridColumns = 0;
+            if (isGridScreen) {
+                const grid = document.getElementById('level-selection-grid');
+                if (grid) gridColumns = getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+            }
+            
+            const currentIndex = state.currentNavIndex;
+            const items = state.navigableItems;
+
+            switch (e.key) {
+                case 'ArrowUp':
+                    if (isGridScreen && currentIndex > 0) {
+                        const newIndex = currentIndex - gridColumns;
+                        state.currentNavIndex = newIndex >= 1 ? newIndex : 0;
+                    } else if (isVerticalListWithBackBtn && currentIndex > 0) {
+                        state.currentNavIndex = Math.max(0, currentIndex - 1);
+                    } else if (isMainMenu && currentIndex > 0) { // From bottom row to top button
+                        state.currentNavIndex = 0;
+                    } else { // Fallback for any other case
+                         state.currentNavIndex = Math.max(0, currentIndex - 1);
+                    }
+                    handled = true;
+                    break;
+
+                case 'ArrowDown':
+                    if (isGridScreen && currentIndex > 0) {
+                        const newIndex = currentIndex + gridColumns;
+                        if (newIndex < items.length) state.currentNavIndex = newIndex;
+                    } else if (isGridScreen && currentIndex === 0) { // from back button to grid
+                        state.currentNavIndex = 1;
+                    } else if (isVerticalListWithBackBtn && currentIndex < items.length - 1) {
+                        state.currentNavIndex++;
+                    } else if (isMainMenu && currentIndex === 0) { // from play button to sub-menu
+                        state.currentNavIndex = 1;
+                    } else { // Fallback for any other case
+                         if (currentIndex < items.length - 1) state.currentNavIndex++;
+                    }
+                    handled = true;
+                    break;
+
+                case 'ArrowLeft':
+                    if (isGridScreen && currentIndex > 0) {
+                        const isFirstColumn = (currentIndex - 1) % gridColumns === 0;
+                        if (!isFirstColumn) {
+                            state.currentNavIndex--;
+                        } else { 
+                            state.currentNavIndex = 0;
+                        }
+                    } else if (isVerticalListWithBackBtn && currentIndex > 0) {
+                        state.currentNavIndex = 0;
+                    } else if (isMainMenu && currentIndex > 1) {
+                        state.currentNavIndex--;
+                    }
+                    handled = true;
+                    break;
+
+                case 'ArrowRight':
+                    if (isGridScreen && currentIndex === 0) { // From back button to grid
+                         state.currentNavIndex = 1;
+                    } else if (isGridScreen && currentIndex > 0) {
+                        const isLastColumn = (currentIndex % gridColumns === 0) && gridColumns > 1;
+                         if (!isLastColumn && currentIndex < items.length - 1) {
+                             state.currentNavIndex++;
+                         }
+                    } else if (isVerticalListWithBackBtn && currentIndex === 0) { // From back button to list
+                        state.currentNavIndex = 1;
+                    } else if (isMainMenu && currentIndex > 0 && currentIndex < 3) {
+                         state.currentNavIndex++;
+                    }
+                    handled = true;
+                    break;
+
+                case 'Enter': 
+                    if (items[currentIndex]) {
+                        items[currentIndex].click();
+                        handled = true; 
+                    }
+                    break;
+                    
+                case 'Escape': 
+                     const backButton = document.querySelector(`#${state.currentScreen} .back-button`);
+                     if (backButton) {
+                        backButton.click();
+                        handled = true;
+                     }
+                     break;
+            }
+            
+            if (handled) {
+                e.preventDefault(); 
+                updateNavSelection(); 
+            }
+        }
+
+        function updateEmojiBackground() {
+            const container = document.querySelector(`#${state.currentScreen} > .background-emojis`);
+            if (!container) return;
+
+            let themeConfig = config.themes[state.theme];
+            let emojis = [];
+            if (!themeConfig || state.theme === 'random') {
+                Object.values(config.themes).forEach(t => emojis.push(...t.walls));
+            } else {
+                emojis.push(...themeConfig.walls);
+            }
+            
+            container.innerHTML = '';
+            for (let i = 0; i < 60; i++) {
+                const emoji = document.createElement('span');
+                emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)] || '✨';
+                emoji.style.left = `${Math.random() * 100}vw`;
+                emoji.style.top = `${Math.random() * 100}vh`;
+                if (i < 20) {
+                    emoji.style.opacity = '0.15';
+                } else {
+                    emoji.classList.add('animated');
+                    emoji.style.animationDelay = `${Math.random() * 12}s`;
+                }
+                container.appendChild(emoji);
+            }
+        }
+        
+        function generateMaze(width, height, startCell) { 
+            let grid = Array.from({ length: height }, (_, y) => Array.from({ length: width }, (_, x) => ({ x, y, walls: { top: true, right: true, bottom: true, left: true }, visited: false, decor: null })));
+            let stack = [grid[startCell.y][startCell.x]];
+            grid[startCell.y][startCell.x].visited = true;
+
+            while (stack.length > 0) {
+                let current = stack.pop();
+                let neighbors = [];
+                const {x, y} = current;
+                if (y > 0 && !grid[y - 1][x].visited) neighbors.push(grid[y - 1][x]);
+                if (x < width - 1 && !grid[y][x + 1].visited) neighbors.push(grid[y][x + 1]);
+                if (y < height - 1 && !grid[y + 1][x].visited) neighbors.push(grid[y + 1][x]);
+                if (x > 0 && !grid[y][x - 1].visited) neighbors.push(grid[y][x - 1]);
+                if (neighbors.length > 0) {
+                    stack.push(current);
+                    let next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    if (next.y < current.y) { current.walls.top = false; next.walls.bottom = false; }
+                    else if (next.x > current.x) { current.walls.right = false; next.walls.left = false; }
+                    else if (next.y > current.y) { current.walls.bottom = false; next.walls.top = false; }
+                    else if (next.x < current.x) { current.walls.left = false; next.walls.right = false; }
+                    next.visited = true;
+                    stack.push(next);
+                }
+            }
+            return grid;
+        }
+        
+        function findDeadEnds(grid) {
+            const deadEnds = [];
+            for (let y = 0; y < grid.length; y++) {
+                for (let x = 0; x < grid[0].length; x++) {
+                    const cell = grid[y][x];
+                    const wallCount = Object.values(cell.walls).filter(Boolean).length;
+                    if (wallCount === 3) {
+                        deadEnds.push(cell);
+                    }
+                }
+            }
+            return deadEnds;
+        }
+        
+        function findLongestPath(grid, start) {
+            const queue = [[start, 0]];
+            const visited = new Set([`${start.x},${start.y}`]);
+            let maxDist = 0;
+            let farthestCell = start;
+
+            while(queue.length > 0) {
+                const [current, dist] = queue.shift();
+                
+                if (dist > maxDist) {
+                    maxDist = dist;
+                    farthestCell = current;
+                }
+
+                const {x, y} = current;
+                const cell = grid[y][x];
+                const neighbors = [];
+                if (!cell.walls.top && grid[y-1]?.[x]) neighbors.push(grid[y-1][x]);
+                if (!cell.walls.right && grid[y]?.[x+1]) neighbors.push(grid[y][x+1]);
+                if (!cell.walls.bottom && grid[y+1]?.[x]) neighbors.push(grid[y+1][x]);
+                if (!cell.walls.left && grid[y]?.[x-1]) neighbors.push(grid[y][x-1]);
+                
+                for(const neighbor of neighbors) {
+                     if(neighbor) {
+                        const key = `${neighbor.x},${neighbor.y}`;
+                        if(!visited.has(key)) {
+                            visited.add(key);
+                            queue.push([neighbor, dist + 1]);
+                        }
+                    }
+                }
+            }
+            return farthestCell;
+        }
+        
+        function findSolutionPath(grid, start, end) {
+            const queue = [[start]];
+            const visited = new Set([`${start.x},${start.y}`]);
+
+            while(queue.length > 0) {
+                const path = queue.shift();
+                const {x, y} = path[path.length - 1];
+
+                if (x === end.x && y === end.y) return path;
+
+                const cell = grid[y][x];
+                const neighbors = [];
+                if (!cell.walls.top && grid[y-1]?.[x]) neighbors.push(grid[y-1][x]);
+                if (!cell.walls.right && grid[y]?.[x+1]) neighbors.push(grid[y][x+1]);
+                if (!cell.walls.bottom && grid[y+1]?.[x]) neighbors.push(grid[y+1][x]);
+                if (!cell.walls.left && grid[y]?.[x-1]) neighbors.push(grid[y][x-1]);
+                
+                for(const neighbor of neighbors) {
+                    const key = `${neighbor.x},${neighbor.y}`;
+                    if(!visited.has(key)) {
+                        visited.add(key);
+                        const newPath = [...path, neighbor];
+                        queue.push(newPath);
+                    }
+                }
+            }
+            return [];
+        }
+
+        function addDecorations(grid, start, end, decorCount) {
+            if (!currentTheme.decor || currentTheme.decor.length === 0) {
+                state.totalDecor = 0;
+                return;
+            };
+
+            const solutionPath = findSolutionPath(grid, start, end);
+            const solutionSet = new Set(solutionPath.map(p => `${p.x},${p.y}`));
+
+            const availableCells = [];
+            for (let y = 0; y < grid.length; y++) {
+                for (let x = 0; x < grid[0].length; x++) {
+                     const wallCount = Object.values(grid[y][x].walls).filter(Boolean).length;
+                    if (!solutionSet.has(`${x},${y}`) && wallCount >= 3) {
+                        availableCells.push(grid[y][x]);
+                    }
+                }
+            }
+            
+            state.totalDecor = Math.min(decorCount, availableCells.length);
+
+            for (let i = 0; i < state.totalDecor; i++) {
+                const randIndex = Math.floor(Math.random() * availableCells.length);
+                const cellToDecorate = availableCells.splice(randIndex, 1)[0];
+                if (cellToDecorate) {
+                    cellToDecorate.decor = currentTheme.decor[Math.floor(Math.random() * currentTheme.decor.length)];
+                }
+            }
+        }
+
+        function drawWavyLine(ctx, x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const angle = Math.atan2(dy, dx);
+            const amplitude = 2; 
+            const wavelength = 15; 
+
+            ctx.save();
+            ctx.translate(x1, y1);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            for (let i = 0; i < len; i++) {
+                ctx.lineTo(i, Math.sin(i / wavelength * Math.PI) * amplitude);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawWalls() {
+            mazeCtx.strokeStyle = state.wallColor;
+            mazeCtx.lineWidth = Math.max(2, Math.min(6, Math.floor(cellSize * 0.1)));
+            mazeCtx.lineCap = 'round';
+            
+            mazeCtx.beginPath();
+            mazeCtx.moveTo(0,0);
+            mazeCtx.lineTo(state.mazeWidth * cellSize, 0);
+            mazeCtx.lineTo(state.mazeWidth * cellSize, state.mazeHeight * cellSize);
+            mazeCtx.lineTo(0, state.mazeHeight * cellSize);
+            mazeCtx.closePath();
+            mazeCtx.stroke();
+
+            for (let y = 0; y < state.mazeHeight; y++) {
+                for (let x = 0; x < state.mazeWidth; x++) {
+                    const cell = mazeGrid[y][x];
+                    const startX = x * cellSize, startY = y * cellSize;
+                    if (cell.walls.bottom && y < state.mazeHeight - 1) {
+                        drawWavyLine(mazeCtx, startX, startY + cellSize, startX + cellSize, startY + cellSize);
+                    }
+                    if (cell.walls.right && x < state.mazeWidth - 1) {
+                        drawWavyLine(mazeCtx, startX + cellSize, startY, startX + cellSize, startY + cellSize);
+                    }
+                }
+            }
+        }
+        
+        function drawDecor() {
+            mazeCtx.textAlign = 'center';
+            mazeCtx.textBaseline = 'middle';
+            for (let y = 0; y < state.mazeHeight; y++) {
+                for (let x = 0; x < state.mazeWidth; x++) {
+                     const cell = mazeGrid[y][x];
+                    if (cell.decor) {
+                        const startX = x * cellSize, startY = y * cellSize;
+                        mazeCtx.font = `bold ${cellSize * 0.6}px sans-serif`;
+                        mazeCtx.fillText(cell.decor, startX + cellSize / 2, startY + cellSize / 2 + (cellSize*0.05));
+                    }
+                }
+            }
+        }
+        
+        function drawHint() {
+            if (!state.hint.visible || !state.hint.path.length) return;
+            mazeCtx.save();
+            mazeCtx.strokeStyle = 'rgba(255, 255, 102, 0.7)';
+            mazeCtx.lineWidth = cellSize * 0.3;
+            mazeCtx.lineCap = 'round';
+            mazeCtx.lineJoin = 'round';
+            
+            mazeCtx.beginPath();
+            const firstCell = state.hint.path[0];
+            mazeCtx.moveTo(firstCell.x * cellSize + cellSize / 2, firstCell.y * cellSize + cellSize / 2);
+
+            state.hint.path.forEach(cell => {
+                mazeCtx.lineTo(cell.x * cellSize + cellSize / 2, cell.y * cellSize + cellSize / 2);
+            });
+            mazeCtx.stroke();
+            mazeCtx.restore();
+        }
+
+        function drawPlayer(yOffset = 0, scale = 1) {
+            if (state.isTimerDefeat) return; // Don't draw player if defeated by timer
+
+            mazeCtx.save();
+            const playerSize = Math.floor(cellSize * 0.7);
+            mazeCtx.font = `bold ${playerSize}px sans-serif`;
+            
+            let rotation = 0;
+            let baseScaleX = 1, baseScaleY = 1;
+
+            if(state.isAnimating) {
+                if (currentTheme.player === '⚽') {
+                    const degreesPerSecond = 350;
+                    const radiansPerSecond = degreesPerSecond * Math.PI / 180;
+                    rotation = (Date.now() / 1000) * radiansPerSecond;
+                } else if (currentTheme.player === '🐌') {
+                    baseScaleX = 1 + Math.sin(Date.now() * 0.015) * 0.1;
+                    baseScaleY = 1 - Math.sin(Date.now() * 0.015) * 0.1;
+                } else {
+                    rotation = Math.sin(Date.now() * 0.02) * 0.2;
+                }
+            }
+            
+            mazeCtx.translate(displayPos.x, displayPos.y + yOffset);
+            mazeCtx.rotate(rotation);
+            mazeCtx.scale(baseScaleX * scale, baseScaleY * scale);
+            mazeCtx.textAlign = 'center';
+            mazeCtx.textBaseline = 'middle';
+            mazeCtx.fillText(currentTheme.player, 0, 0 + (cellSize * 0.05));
+            mazeCtx.restore();
+        }
+
+        function drawFinish(yOffset = 0, scale = 1, alpha = 1.0) {
+            mazeCtx.save();
+            mazeCtx.globalAlpha = alpha;
+            const finishSize = Math.floor(cellSize * 0.8);
+            mazeCtx.font = `bold ${finishSize}px sans-serif`;
+            
+            mazeCtx.translate(state.finishPos.x * cellSize + cellSize / 2, state.finishPos.y * cellSize + cellSize / 2 + yOffset);
+            mazeCtx.scale(scale, scale);
+            mazeCtx.textAlign = 'center';
+            mazeCtx.textBaseline = 'middle';
+            mazeCtx.fillText(currentTheme.finish, 0, 0 + (cellSize * 0.05));
+            mazeCtx.restore();
+        }
+
+        function drawGhosts() {
+            mazeCtx.save();
+            const ghostSize = Math.floor(cellSize * 0.8);
+            mazeCtx.font = `bold ${ghostSize}px sans-serif`;
+            mazeCtx.textAlign = 'center';
+            mazeCtx.textBaseline = 'middle';
+            const yBob = Math.sin(Date.now() * 0.005) * (cellSize * 0.1);
+
+            state.ghosts.forEach(ghost => {
+                const x = ghost.x * cellSize + cellSize / 2;
+                const y = ghost.y * cellSize + cellSize / 2;
+                mazeCtx.fillText('👻', x, y + yBob);
+            });
+            mazeCtx.restore();
+        }
+        
+        function drawPlayerDefeatAnimation() {
+            state.defeatAnimation.progress += 0.02;
+
+            const bubbles = state.defeatAnimation.bubbles;
+            mazeCtx.save();
+            mazeCtx.translate(displayPos.x, displayPos.y);
+
+            for(const bubble of bubbles) {
+                bubble.radius += bubble.speed;
+                bubble.opacity = 1 - (bubble.radius / bubble.maxRadius);
+                if (bubble.opacity < 0) bubble.opacity = 0;
+
+                mazeCtx.beginPath();
+                mazeCtx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+                mazeCtx.fillStyle = `rgba(225, 239, 255, ${bubble.opacity})`;
+                mazeCtx.fill();
+            }
+            mazeCtx.restore();
+
+            if (state.defeatAnimation.progress >= 1) {
+                state.playerIsDefeated = false; 
+                state.isTimerDefeat = false;
+                restartLevel();
+            }
+        }
+
+        function gameLoop() {
+            if (state.currentScreen !== 'game-screen') return;
+            
+            if (!state.playerIsDefeated) {
+                displayPos.x += (targetPos.x - displayPos.x) * ANIMATION_SPEED;
+                displayPos.y += (targetPos.y - displayPos.y) * ANIMATION_SPEED;
+                const dx = targetPos.x - displayPos.x; const dy = targetPos.y - displayPos.y;
+                if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) {
+                    displayPos.x = targetPos.x; displayPos.y = targetPos.y;
+                    if (state.isAnimating) { 
+                        state.isAnimating = false; 
+                        let hasWon = checkWin();
+                        if (!hasWon && (state.gameMode === 'ghost' || state.gameMode === 'all-in-one')) {
+                            checkCollision();
+                        }
+                    }
+                }
+            }
+            
+            mazeCtx.clearRect(0, 0, mazeCanvas.width, mazeCanvas.height);
+            
+            const gradient = mazeCtx.createLinearGradient(0, 0, 0, mazeCanvas.height);
+            gradient.addColorStop(0, currentTheme.gradient[0]);
+            gradient.addColorStop(1, currentTheme.gradient[1]);
+            mazeCtx.fillStyle = gradient;
+            mazeCtx.fillRect(0, 0, mazeCanvas.width, mazeCanvas.height);
+            
+            if (currentBgImage && currentBgImage.complete) {
+                mazeCtx.save();
+                mazeCtx.globalAlpha = 0.35; // Set image opacity
+                mazeCtx.drawImage(currentBgImage, 0, 0, mazeCanvas.width, mazeCanvas.height);
+                mazeCtx.restore();
+            }
+            
+            drawWalls();
+            drawDecor();
+            drawHint();
+
+            
+            let finishAlpha = 1.0;
+            const isFlashlightMode = state.gameMode === 'flashlight' || state.gameMode === 'all-in-one';
+            
+            if (isFlashlightMode) {
+                const lightRadius = ((config.levels[state.currentLevel].visibility.w + config.levels[state.currentLevel].visibility.h) / 2) * cellSize;
+                const finishPixelX = state.finishPos.x * cellSize + cellSize / 2;
+                const finishPixelY = state.finishPos.y * cellSize + cellSize / 2;
+                const distance = Math.sqrt(Math.pow(finishPixelX - displayPos.x, 2) + Math.pow(finishPixelY - displayPos.y, 2));
+
+                if (distance > lightRadius) {
+                    finishAlpha = 0.5;
+                }
+            }
+
+            if (state.gameMode === 'ghost' || state.gameMode === 'all-in-one') {
+                drawGhosts();
+            }
+            drawFinish(0, 1, finishAlpha);
+
+            if (state.playerIsDefeated) {
+                drawPlayerDefeatAnimation();
+            } else {
+                drawPlayer();
+            }
+
+            if (state.isGameActive && isFlashlightMode) {
+                const lightRadius = ((config.levels[state.currentLevel].visibility.w + config.levels[state.currentLevel].visibility.h) / 2) * cellSize;
+                
+                mazeCtx.save();
+                mazeCtx.fillStyle = 'black';
+                mazeCtx.beginPath();
+                mazeCtx.rect(0, 0, mazeCanvas.width, mazeCanvas.height);
+                mazeCtx.arc(displayPos.x, displayPos.y, lightRadius, 0, Math.PI * 2, true);
+                mazeCtx.fill('evenodd');
+                mazeCtx.restore();
+                
+                if (finishAlpha < 1.0) {
+                    drawFinish(0, 1, 0.5);
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(gameLoop);
+        }
+        
+        function stopGameLoop() { if (animationFrameId) { cancelAnimationFrame(animationFrameId); animationFrameId = null; } }
+        
+        function updateDecorCounter() {
+            const decorCounterEl = document.getElementById('decor-counter');
+            if (state.totalDecor > 0 && currentTheme.decor.length > 0) {
+                decorCounterEl.style.display = 'flex';
+                const decorEmoji = currentTheme.decor[0] || '⭐';
+                decorCounterEl.innerHTML = `${decorEmoji}&nbsp;${state.collectedDecor}&nbsp;/&nbsp;${state.totalDecor}`;
+            } else {
+                decorCounterEl.style.display = 'none';
+            }
+        }
+        
+        function handleTimerDefeat() {
+            state.isGameActive = false;
+            state.playerIsDefeated = true;
+            state.isTimerDefeat = true;
+            audioManager.stopWarningSfx();
+            audioManager.playSfx(config.audio.timerDefeatSfx);
+            
+            state.defeatAnimation.progress = 0;
+            state.defeatAnimation.bubbles = [];
+            for (let i = 0; i < 15; i++) {
+                state.defeatAnimation.bubbles.push({
+                    x: (Math.random() - 0.5) * cellSize * 0.5,
+                    y: (Math.random() - 0.5) * cellSize * 0.5,
+                    radius: Math.random() * 5,
+                    maxRadius: Math.random() * 15 + 10,
+                    speed: Math.random() * 0.5 + 0.5,
+                });
+            }
+        }
+        
+        function updateTimerDisplay() {
+            if (timerDisplay) {
+                let timeString = state.gameTimer.timeLeft.toString();
+                if(state.gameTimer.timeLeft < 10 && state.gameTimer.timeLeft >= 0) {
+                    timeString = "0" + timeString;
+                }
+                
+                timerDisplay.innerHTML = `⏰ ${timeString}`;
+
+                if (state.gameTimer.timeLeft <= 20 && state.gameTimer.timeLeft > 0) {
+                    if (!timerDisplay.classList.contains('warning')) {
+                       timerDisplay.classList.add('warning');
+                       audioManager.playWarningSfx(config.audio.timerWarningSfx);
+                    }
+                } else {
+                    timerDisplay.classList.remove('warning');
+                    audioManager.stopWarningSfx();
+                }
+
+                if (state.gameTimer.timeLeft === 0) {
+                     timerDisplay.innerHTML = `⏰ 0️⃣`;
+                     timerDisplay.classList.add('timer-zero-blink');
+                }
+            }
+        }
+
+        function countdown() {
+            state.gameTimer.timeLeft--;
+            updateTimerDisplay();
+            if (state.gameTimer.timeLeft <= 0) {
+                clearInterval(state.gameTimer.id);
+                state.gameTimer.id = null;
+                handleTimerDefeat();
+            }
+        }
+
+        function restartLevel() {
+            if (!initialMazeGrid) return;
+            hideModal(victoryModal);
+            hideModal(tvBackModal);
+            stopGame(); 
+
+            mazeGrid = JSON.parse(JSON.stringify(initialMazeGrid));
+            
+            state.playerPos = { ...state.startPos };
+            targetPos.x = displayPos.x = state.playerPos.x * cellSize + cellSize / 2;
+            targetPos.y = displayPos.y = state.playerPos.y * cellSize + cellSize / 2;
+
+            if (state.gameMode === 'ghost' || state.gameMode === 'all-in-one') {
+                 state.ghosts = JSON.parse(JSON.stringify(state.startGhosts));
+            }
+            
+            state.collectedDecor = 0;
+            state.playerStepCount = 0;
+            state.playerIsDefeated = false;
+            state.isTimerDefeat = false;
+            state.defeatAnimation = { progress: 0, bubbles: [] };
+            state.hint = { path: [], visible: false, timer: null };
+            
+            timerDisplay.classList.remove('warning', 'timer-zero-blink');
+            
+            updateDecorCounter();
+
+            hintScreenActive = false;
+            state.isGameActive = true; 
+            
+            if (state.gameMode === 'timer' || state.gameMode === 'all-in-one') {
+                const levelConf = config.levels[state.currentLevel];
+                state.gameTimer.timeLeft = levelConf.timer;
+                timerDisplay.style.display = 'flex';
+                updateTimerDisplay();
+                state.gameTimer.id = setInterval(countdown, 1000);
+            }
+
+            gameLoop();
+        }
+
+        function handleGameInput(key) {
+            if (state.isAnimating || !state.isGameActive || state.playerIsDefeated) return;
+            if (key === 'Enter') { return; }
+
+            let { x, y } = state.playerPos; const currentCell = mazeGrid[y][x]; let moved = false;
+            let nextX = x, nextY = y;
+            if ((key === 'ArrowUp' || key === 'w') && !currentCell.walls.top) { nextY--; moved = true; }
+            else if ((key === 'ArrowDown' || key === 's') && !currentCell.walls.bottom) { nextY++; moved = true; }
+            else if ((key === 'ArrowLeft' || key === 'a') && !currentCell.walls.left) { nextX--; moved = true; }
+            else if ((key === 'ArrowRight' || key === 'd') && !currentCell.walls.right) { nextX++; moved = true; }
+            
+            if (moved) {
+                state.isAnimating = true; state.playerPos = {x: nextX, y: nextY};
+                targetPos.x = nextX * cellSize + cellSize / 2; 
+                targetPos.y = nextY * cellSize + cellSize / 2;
+                
+                const nextCell = mazeGrid[nextY][nextX];
+                if(nextCell.decor) {
+                    state.collectedDecor++;
+                    updateDecorCounter();
+                    audioManager.playSfx(config.audio.collectSfx);
+                    nextCell.decor = null;
+                }
+
+                if (state.gameMode === 'ghost' || state.gameMode === 'all-in-one') {
+                     if (state.currentLevel >= 5) {
+                        state.playerStepCount++;
+                        if (state.playerStepCount % 3 === 0) {
+                            moveGhosts();
+                        }
+                    }
+                }
+            }
+        }
+
+        function moveGhosts() {
+            state.ghosts.forEach(ghost => {
+                const { x, y } = ghost;
+                const moves = [];
+                if (y > 0) moves.push({ x: x, y: y - 1 });
+                if (y < state.mazeHeight - 1) moves.push({ x: x, y: y + 1 });
+                if (x > 0) moves.push({ x: x - 1, y: y });
+                if (x < state.mazeWidth - 1) moves.push({ x: x + 1, y: y });
+
+                if (moves.length > 0) {
+                    const newPos = moves[Math.floor(Math.random() * moves.length)];
+                    ghost.x = newPos.x;
+                    ghost.y = newPos.y;
+                }
+            });
+        }
+
+        function checkCollision() {
+            for(const ghost of state.ghosts) {
+                if (state.playerPos.x === ghost.x && state.playerPos.y === ghost.y) {
+                    if (state.playerIsDefeated) return false; 
+                    state.isGameActive = false;
+                    state.playerIsDefeated = true;
+                    audioManager.playSfx(config.audio.defeatSfx);
+                    state.defeatAnimation.progress = 0;
+                    state.defeatAnimation.bubbles = [];
+                    for (let i = 0; i < 15; i++) {
+                        state.defeatAnimation.bubbles.push({
+                            x: (Math.random() - 0.5) * cellSize * 0.5,
+                            y: (Math.random() - 0.5) * cellSize * 0.5,
+                            radius: Math.random() * 5,
+                            maxRadius: Math.random() * 15 + 10,
+                            speed: Math.random() * 0.5 + 0.5,
+                        });
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function resizeCanvas() {
+            if (state.currentScreen !== 'game-screen') return;
+
+            const container = document.getElementById('maze-wrapper');
+            if (!container) return;
+
+            const aspectRatio = state.mazeWidth / state.mazeHeight;
+            const containerRatio = container.clientWidth / container.clientHeight;
+            let mazeDisplayW, mazeDisplayH;
+
+            if (containerRatio > aspectRatio) {
+                mazeDisplayH = container.clientHeight;
+                mazeDisplayW = mazeDisplayH * aspectRatio;
+            } else {
+                mazeDisplayW = container.clientWidth;
+                mazeDisplayH = mazeDisplayW / aspectRatio;
+            }
+
+            const dpr = window.devicePixelRatio || 1;
+            mazeCanvas.style.width = `${mazeDisplayW}px`;
+            mazeCanvas.style.height = `${mazeDisplayH}px`;
+            mazeCanvas.width = Math.floor(mazeDisplayW * dpr);
+            mazeCanvas.height = Math.floor(mazeDisplayH * dpr);
+            mazeCtx.scale(dpr, dpr);
+            
+            cellSize = Math.floor(Math.min(mazeDisplayW / state.mazeWidth, mazeDisplayH / state.mazeHeight));
+            
+            targetPos.x = displayPos.x = state.playerPos.x * cellSize + cellSize / 2;
+            targetPos.y = displayPos.y = state.playerPos.y * cellSize + cellSize / 2;
+        }
+        
+        function startGame(levelIndex) {
+            switchScreen('game-screen');
+            state.currentLevel = levelIndex;
+            const levelConf = config.levels[levelIndex];
+            
+            state.playerIsDefeated = false;
+            state.isTimerDefeat = false;
+            state.collectedDecor = 0;
+            state.totalDecor = 0;
+            state.ghosts = [];
+            state.startGhosts = [];
+
+            timerDisplay.classList.remove('warning', 'timer-zero-blink');
+
+
+            if (state.theme === 'random' || !config.themes[state.theme]) {
+                const themeKeys = Object.keys(config.themes);
+                currentTheme = config.themes[themeKeys[Math.floor(Math.random() * themeKeys.length)]];
+            } else { currentTheme = config.themes[state.theme]; }
+            
+            currentBgImage = loadedBackgroundImages[Math.floor(Math.random() * loadedBackgroundImages.length)];
+
+            state.mazeWidth = levelConf.w;
+            state.mazeHeight = levelConf.h;
+            
+            const corners = [ {x: 0, y: 0}, {x: state.mazeWidth - 1, y: 0}, {x: 0, y: state.mazeHeight - 1}, {x: state.mazeWidth - 1, y: state.mazeHeight - 1} ];
+            state.startPos = { ...corners[Math.floor(Math.random() * corners.length)] };
+            state.playerPos = { ...state.startPos };
+            
+            mazeGrid = generateMaze(state.mazeWidth, state.mazeHeight, state.playerPos);
+            state.finishPos = findLongestPath(mazeGrid, mazeGrid[state.playerPos.y][state.playerPos.x]);
+            addDecorations(mazeGrid, state.playerPos, state.finishPos, levelConf.bonuses);
+            
+            if (state.gameMode === 'ghost' || state.gameMode === 'all-in-one') {
+                state.playerStepCount = 0;
+                let availableCells;
+                if (levelIndex < 5) {
+                    availableCells = findDeadEnds(mazeGrid).filter(cell => (cell.x !== state.playerPos.x || cell.y !== state.playerPos.y) && (cell.x !== state.finishPos.x || cell.y !== state.finishPos.y) && !mazeGrid[cell.y][cell.x].decor);
+                } else {
+                    availableCells = [];
+                    for (let y = 0; y < state.mazeHeight; y++) {
+                        for (let x = 0; x < state.mazeWidth; x++) {
+                            const isStart = x === state.playerPos.x && y === state.playerPos.y;
+                            const isFinish = x === state.finishPos.x && y === state.finishPos.y;
+                            const hasDecor = !!mazeGrid[y][x].decor;
+                            if (!isStart && !isFinish && !hasDecor) {
+                                availableCells.push({x, y});
+                            }
+                        }
+                    }
+                }
+                
+                for(let i=0; i < levelConf.ghosts; i++){
+                    if(availableCells.length > 0) {
+                        const randIndex = Math.floor(Math.random() * availableCells.length);
+                        const ghostPos = availableCells.splice(randIndex, 1)[0];
+                        state.ghosts.push(ghostPos);
+                        state.startGhosts.push(ghostPos);
+                    }
+                }
+            }
+            
+            if (state.gameMode === 'timer' || state.gameMode === 'all-in-one') {
+                state.gameTimer.timeLeft = levelConf.timer;
+                updateTimerDisplay();
+            } else {
+                timerDisplay.style.display = 'none';
+            }
+
+
+            initialMazeGrid = JSON.parse(JSON.stringify(mazeGrid)); 
+            updateDecorCounter();
+
+            setTimeout(() => {
+                resizeCanvas();
+                stopGameLoop(); 
+                showStartFinish();
+            }, 50);
+        }
+        
+        function showHint() {
+            if (state.hint.visible) return; 
+            state.hint.path = findSolutionPath(mazeGrid, state.playerPos, state.finishPos);
+            state.hint.visible = true;
+
+            if (state.hint.timer) clearTimeout(state.hint.timer);
+            state.hint.timer = setTimeout(() => {
+                state.hint.visible = false;
+                state.hint.path = [];
+                state.hint.timer = null;
+            }, 3000); // Показываем подсказку 3 секунды
+        }
+        
+        function showStartFinish() { 
+            state.isGameActive = false; 
+            hintScreenActive = true; 
+            
+            if (state.gameMode === 'timer' || state.gameMode === 'all-in-one') {
+                timerDisplay.style.display = 'flex';
+            }
+            
+            mazeCtx.clearRect(0, 0, mazeCanvas.width, mazeCanvas.height);
+            
+            if (currentBgImage && currentBgImage.complete) {
+                mazeCtx.drawImage(currentBgImage, 0, 0, mazeCanvas.width, mazeCanvas.height);
+            }
+            
+            const gradient = mazeCtx.createLinearGradient(0, 0, 0, mazeCanvas.height);
+            gradient.addColorStop(0, currentTheme.gradient[0]);
+            gradient.addColorStop(1, currentTheme.gradient[1]);
+            mazeCtx.save();
+            mazeCtx.globalAlpha = 0.2;
+            mazeCtx.fillStyle = gradient;
+            mazeCtx.fillRect(0, 0, mazeCanvas.width, mazeCanvas.height);
+            mazeCtx.restore();
+
+            drawWalls();
+            drawDecor();
+
+            mazeCtx.fillStyle = 'rgba(0, 0, 0, 0.70)';
+            mazeCtx.fillRect(0, 0, mazeCanvas.width, mazeCanvas.height);
+            
+            drawPlayer();
+            drawFinish();
+
+            const pointerSize = cellSize * 0.5;
+            mazeCtx.font = `${pointerSize}px sans-serif`;
+            mazeCtx.textAlign = 'center';
+            mazeCtx.textBaseline = 'middle';
+
+            if (state.playerPos.x < state.mazeWidth - 1) {
+                mazeCtx.fillText('👈', (state.playerPos.x * cellSize + cellSize / 2) + cellSize * 0.7, state.playerPos.y * cellSize + cellSize / 2);
+            }
+            if (state.playerPos.x > 0) {
+                mazeCtx.fillText('👉', (state.playerPos.x * cellSize + cellSize / 2) - cellSize * 0.7, state.playerPos.y * cellSize + cellSize / 2);
+            }
+            if (state.finishPos.x < state.mazeWidth - 1) {
+                mazeCtx.fillText('👈', (state.finishPos.x * cellSize + cellSize / 2) + cellSize * 0.7, state.finishPos.y * cellSize + cellSize / 2);
+            }
+            if (state.finishPos.x > 0) {
+                mazeCtx.fillText('👉', (state.finishPos.x * cellSize + cellSize / 2) - cellSize * 0.7, state.finishPos.y * cellSize + cellSize / 2);
+            }
+            
+            mazeCanvas.addEventListener('click', beginGameplay, { once: true }); 
+            mazeCanvas.addEventListener('touchstart', beginGameplay, { once: true }); 
+            
+            gameStartKeyListener = (e) => {
+                const gameKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', 'Enter'];
+                if (gameKeys.includes(e.key)) {
+                    document.removeEventListener('keydown', gameStartKeyListener);
+                    gameStartKeyListener = null;
+                    beginGameplay(e);
+                }
+            };
+            document.addEventListener('keydown', gameStartKeyListener);
+        }
+
+        function beginGameplay(initialEvent = null) {
+            if (!hintScreenActive) return; 
+            if (initialEvent && initialEvent.preventDefault) initialEvent.preventDefault();
+            
+            state.dpadNavActive = true;
+            hintScreenActive = false; 
+            state.isGameActive = true;
+            if ((state.gameMode === 'timer' || state.gameMode === 'all-in-one') && !state.gameTimer.id) {
+                state.gameTimer.id = setInterval(countdown, 1000);
+            }
+            gameLoop();
+
+            if(initialEvent) {
+                handleGameScreenKeyDown(initialEvent);
+            }
+        }
+        function launchConfetti() {
+            const container = document.querySelector('#victory-modal .animation-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+                confetti.style.animationDuration = `${Math.random() * 2 + 2}s`;
+                container.appendChild(confetti);
+            }
+        }
+        
+        function checkWin() { 
+            if (state.gameMode === 'ghost' || state.gameMode === 'all-in-one') {
+                 for(const ghost of state.ghosts) {
+                    if(state.playerPos.x === ghost.x && state.playerPos.y === ghost.y){
+                        return false;
+                    }
+                 }
+            }
+
+            if (!state.isAnimating && state.playerPos.x === state.finishPos.x && state.playerPos.y === state.finishPos.y) {
+                 stopGame(); 
+                 
+                 let stars = 1;
+                 if(state.totalDecor > 0) {
+                     if (state.collectedDecor === state.totalDecor) { stars = 3; } 
+                     else if (state.collectedDecor >= Math.ceil(state.totalDecor / 2)) { stars = 2; }
+                 } else { stars = 3; }
+                 
+                 const currentStars = state.progress[state.gameMode]?.[state.currentLevel] || 0;
+                 if (stars > currentStars) {
+                     state.progress[state.gameMode][state.currentLevel] = stars;
+                     saveProgress();
+                     updateTotalStarsCounter();
+                 }
+
+                 const starContainer = document.getElementById('star-rating-container');
+                 starContainer.innerHTML = '';
+                 for(let i=1; i<=3; i++) {
+                     const starEl = document.createElement('span');
+                     starEl.textContent = '★';
+                     starEl.className = i <= stars ? 'star yellow' : 'star gray';
+                     starContainer.appendChild(starEl);
+                 }
+
+                 const nextLevelButton = document.getElementById('next-level-button');
+                 if (state.currentLevel < config.levels.length - 1) {
+                     nextLevelButton.style.display = 'flex';
+                 } else {
+                     nextLevelButton.style.display = 'none';
+                 }
+
+                 showModal(victoryModal); 
+                 audioManager.playSfx(config.audio.victorySfx[Math.floor(Math.random() * config.audio.victorySfx.length)]); 
+                 launchConfetti(); 
+                 return true;
+            }
+            return false;
+        }
+        
+        function showLevelSelectionScreen(mode) {
+            state.gameMode = mode;
+            const grid = document.getElementById('level-selection-grid');
+            grid.innerHTML = '';
+
+            config.levels.forEach((level, index) => {
+                const card = document.createElement('button');
+                card.className = 'level-card nav-item';
+                card.dataset.navIndex = index + 1; 
+                
+                const starsCount = state.progress[mode]?.[index] || 0;
+                let starsHTML = '';
+                for(let i = 0; i < 3; i++) {
+                    starsHTML += `</span><span class="star ${i < starsCount ? 'filled' : ''}">★</span>`;
+                }
+
+                card.innerHTML = `
+                    <div class="level-number">${index + 1}</div>
+                    <div class="level-stars">${starsHTML}</div>
+                `;
+                card.addEventListener('click', () => startGame(index));
+                grid.appendChild(card);
+            });
+            switchScreen('level-selection-screen');
+        }
+
+        function showModal(modal) { 
+            state.dpadNavActive = true;
+            state.modalNavIndex = 0;
+            modal.classList.add('visible'); 
+            const items = Array.from(modal.querySelectorAll('.modal-button'));
+            items.forEach((item, index) => item.classList.toggle('selected', index === 0));
+        }
+        function hideModal(modal) { 
+            state.dpadNavActive = false;
+            modal.classList.remove('visible'); 
+            const items = Array.from(modal.querySelectorAll('.modal-button'));
+            items.forEach(item => item.classList.remove('selected'));
+        }
+
+        function setLanguage(lang) { 
+            state.settings.language = lang; 
+            document.documentElement.lang = lang; 
+            document.querySelectorAll('[data-lang]').forEach(el => { 
+                const key = el.dataset.lang; 
+                if (config.languages[lang] && config.languages[lang][key]) { 
+                    const span = el.querySelector('span:not(.card-icon)') || el; 
+                    span.textContent = config.languages[lang][key]; 
+                } 
+            }); 
+            
+            const langButtonSpan = document.querySelector('#language-button .lang-text');
+            if (langButtonSpan) {
+                langButtonSpan.textContent = config.languageNames[lang] || lang.toUpperCase();
+            }
+            
+            document.querySelectorAll('.theme-name').forEach(el => {
+                const key = el.parentElement.parentElement.dataset.themeKey;
+                 if (config.languages[lang] && config.languages[lang][key]) {
+                    el.textContent = config.languages[lang][key];
+                }
+            });
+        }
+
+        function updateSoundButtonUI() {
+            const soundButton = document.getElementById('sound-toggle-button');
+            if (soundButton) {
+                const icon = soundButton.querySelector('.card-icon');
+                if (icon) {
+                    icon.textContent = state.settings.sound ? '🔊' : '�';
+                }
+            }
+        }
+        
+        function updateDpadButtonUI() {
+            const dpadButton = document.getElementById('dpad-toggle-button');
+            if (dpadButton) {
+                const statusEl = dpadButton.querySelector('.dpad-status');
+                if (statusEl) {
+                    statusEl.textContent = state.settings.dpad ? '✔️' : '❌';
+                }
+            }
+        }
+
+        function updateModeCompletionPercentage() {
+            const totalPossibleStars = config.levels.length * 3;
+            for (const mode of ['classic', 'flashlight', 'ghost', 'timer', 'all-in-one']) {
+                const modeCard = document.getElementById(`mode-${mode}`);
+                if (modeCard) {
+                    const percentageEl = modeCard.querySelector('.mode-percentage');
+                    if (percentageEl) {
+                        const earnedStars = Object.values(state.progress[mode] || {}).reduce((sum, stars) => sum + stars, 0);
+                        const percentage = totalPossibleStars > 0 ? Math.round((earnedStars / totalPossibleStars) * 100) : 0;
+                        percentageEl.textContent = `${percentage}%`;
+                    }
+                }
+            }
+        }
+        
+        function handlePageVisibility() {
+            if (document.hidden) {
+                if (state.gameTimer.id) {
+                    clearInterval(state.gameTimer.id);
+                    state.gameTimer.isPaused = true;
+                }
+                audioManager.musicWasPlaying = audioManager.currentTrack && !audioManager.currentTrack.paused;
+                audioManager.currentTrack?.pause();
+                audioManager.warningSfx?.pause();
+
+            } else {
+                 if (audioManager.musicWasPlaying) {
+                    audioManager.currentTrack?.play().catch(e => {});
+                }
+                if (state.gameTimer.isPaused) {
+                    state.gameTimer.isPaused = false;
+                    if (state.isGameActive && (state.gameMode === 'timer' || state.gameMode === 'all-in-one') && state.gameTimer.timeLeft > 0) {
+                        if (state.gameTimer.timeLeft <= 20) {
+                            audioManager.playWarningSfx(config.audio.timerWarningSfx);
+                        }
+                        state.gameTimer.id = setInterval(countdown, 1000);
+                    }
+                }
+            }
+        }
+
+        async function preloadAssets() {
+            const imagePromises = config.backgrounds.map(src => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = () => {
+                        console.warn(`Failed to load image, will be skipped: ${src}`);
+                        resolve(null); // Resolve with null to not break Promise.all
+                    };
+                    img.crossOrigin = "Anonymous";
+                    img.src = src;
+                });
+            });
+
+            const loaderProgress = document.getElementById('loader-progress');
+            const loaderPercentage = document.getElementById('loader-percentage');
+            const totalAssets = imagePromises.length;
+            
+            for(let i=0; i<imagePromises.length; i++) {
+                const img = await imagePromises[i];
+                if (img) {
+                    loadedBackgroundImages.push(img);
+                }
+                const progress = Math.round(((i + 1) / totalAssets) * 100);
+                loaderProgress.style.background = `conic-gradient(var(--primary-pink) ${progress * 3.6}deg, #E0E0E0 0%)`;
+                loaderPercentage.textContent = `${progress}%`;
+            }
+        }
+
+        async function initialize() {
+            loadProgress();
+            updateTotalStarsCounter();
+            updateModeCompletionPercentage();
+            updateSoundButtonUI();
+            updateDpadButtonUI();
+
+            const userLang = navigator.language.slice(0, 2);
+            const defaultLang = config.languages[userLang] ? userLang : 'en';
+            
+            const themesPanel = document.querySelector('#themes-screen .menu-panel');
+            let themeNavIndex = 2;
+            for (const key in config.themes) {
+                const theme = config.themes[key];
+                const item = document.createElement('button');
+                item.className = 'menu-button nav-item';
+                item.dataset.themeKey = key;
+                item.dataset.navIndex = themeNavIndex++;
+                const themeNameSpan = document.createElement('span');
+                themeNameSpan.className = 'theme-name';
+                themeNameSpan.dataset.lang = key;
+                item.innerHTML = `<span>${theme.player}</span>`;
+                item.appendChild(themeNameSpan);
+                item.insertAdjacentHTML('beforeend', `<span>${theme.finish}</span>`);
+
+                item.addEventListener('click', () => { state.theme = key; updateEmojiBackground(); switchScreen('main-menu-screen'); });
+                themesPanel.appendChild(item);
+            }
+             setLanguage(defaultLang);
+             
+            document.addEventListener('visibilitychange', handlePageVisibility);
+            document.addEventListener('keydown', handleGlobalKeyDown);
+
+            let resizeTimeout;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimeout);
+                if (state.currentScreen === 'game-screen') {
+                    resizeTimeout = setTimeout(resizeCanvas, 100); 
+                }
+            });
+            
+            document.getElementById('play-button').addEventListener('click', () => switchScreen('game-mode-screen'));
+            document.getElementById('mode-classic').addEventListener('click', () => showLevelSelectionScreen('classic'));
+            document.getElementById('mode-flashlight').addEventListener('click', () => showLevelSelectionScreen('flashlight'));
+            document.getElementById('mode-ghost').addEventListener('click', () => showLevelSelectionScreen('ghost'));
+            document.getElementById('mode-timer').addEventListener('click', () => showLevelSelectionScreen('timer'));
+            document.getElementById('mode-all-in-one').addEventListener('click', () => showLevelSelectionScreen('all-in-one'));
+            document.getElementById('mode-random').addEventListener('click', () => {
+                const availableModes = ['classic', 'flashlight', 'ghost', 'timer', 'all-in-one'];
+                const randomMode = availableModes[Math.floor(Math.random() * availableModes.length)];
+                const randomLevel = Math.floor(Math.random() * config.levels.length);
+                state.gameMode = randomMode;
+                startGame(randomLevel);
+            });
+
+
+            document.getElementById('settings-button').addEventListener('click', () => switchScreen('settings-screen'));
+            document.getElementById('themes-button').addEventListener('click', () => switchScreen('themes-screen'));
+            document.querySelectorAll('.back-button').forEach(btn => btn.addEventListener('click', () => switchScreen(btn.dataset.targetScreen)));
+            
+            document.getElementById('return-menu-button').addEventListener('click', () => { showModal(confirmExitModal); state.isGameActive = false; });
+            document.getElementById('hint-button').addEventListener('click', showHint);
+            document.getElementById('restart-game-button').addEventListener('click', restartLevel);
+            
+            document.getElementById('menu-button-victory').addEventListener('click', () => { hideModal(victoryModal); showLevelSelectionScreen(state.gameMode); });
+            document.getElementById('next-level-button').addEventListener('click', () => { hideModal(victoryModal); startGame(state.currentLevel + 1); });
+            document.getElementById('retry-level-button-victory').addEventListener('click', restartLevel);
+            
+            document.getElementById('confirm-exit-yes').addEventListener('click', () => { hideModal(confirmExitModal); stopGame(); showLevelSelectionScreen(state.gameMode); });
+            document.getElementById('confirm-exit-no').addEventListener('click', () => { hideModal(confirmExitModal); if(!hintScreenActive && !state.playerIsDefeated) state.isGameActive = true; });
+
+            document.getElementById('reset-progress-button').addEventListener('click', () => showModal(confirmResetModal));
+            document.getElementById('confirm-reset-yes').addEventListener('click', () => { hideModal(confirmResetModal); resetProgress(); });
+            document.getElementById('confirm-reset-no').addEventListener('click', () => hideModal(confirmResetModal));
+            
+            // Listeners for new TV modal
+            document.getElementById('tv-back-home').addEventListener('click', () => { hideModal(tvBackModal); stopGame(); switchScreen('main-menu-screen'); });
+            document.getElementById('tv-back-restart').addEventListener('click', restartLevel);
+            document.getElementById('tv-back-hint').addEventListener('click', () => { hideModal(tvBackModal); showHint(); state.isGameActive = true; });
+            document.getElementById('tv-back-cancel').addEventListener('click', () => { hideModal(tvBackModal); if(!hintScreenActive && !state.playerIsDefeated) state.isGameActive = true; });
+
+
+            document.getElementById('random-theme-button').addEventListener('click', () => { state.theme = 'random'; updateEmojiBackground(); switchScreen('main-menu-screen'); });
+
+            document.getElementById('dpad-toggle-button').addEventListener('click', (e) => { 
+                state.settings.dpad = !state.settings.dpad; 
+                e.currentTarget.classList.toggle('choice-selected', state.settings.dpad); 
+                document.getElementById('game-screen').classList.toggle('dpad-on', state.settings.dpad); 
+                updateDpadButtonUI(); 
+            });
+            
+            document.getElementById('sound-toggle-button').addEventListener('click', (e) => { 
+                state.settings.sound = !state.settings.sound; 
+                e.currentTarget.classList.toggle('choice-selected', state.settings.sound); 
+                if (!state.settings.sound) { 
+                    audioManager.stop();
+                    audioManager.stopWarningSfx();
+                } else if (state.currentScreen !== 'game-screen') { 
+                    audioManager.play(config.audio.menu, true); 
+                } 
+                updateSoundButtonUI(); 
+            });
+
+            document.getElementById('language-button').addEventListener('click', () => { const langKeys = Object.keys(config.languages); const nextLang = langKeys[(langKeys.indexOf(state.settings.language) + 1) % langKeys.length]; setLanguage(nextLang); });
+            
+            const dpadButtons = { 'dpad-up': 'ArrowUp', 'dpad-down': 'ArrowDown', 'dpad-left': 'ArrowLeft', 'dpad-right': 'ArrowRight' };
+            for(const [btnId, key] of Object.entries(dpadButtons)) {
+                const button = document.getElementById(btnId);
+                const startMoving = (e) => { e.preventDefault(); if(moveInterval) clearInterval(moveInterval); handleGameInput(key); moveInterval = setInterval(() => handleGameInput(key), 150); };
+                const stopMoving = (e) => { e.preventDefault(); clearInterval(moveInterval); moveInterval = null; };
+                button.addEventListener('mousedown', startMoving); button.addEventListener('touchstart', startMoving, { passive: false });
+                button.addEventListener('mouseup', stopMoving); button.addEventListener('mouseleave', stopMoving); button.addEventListener('touchend', stopMoving);
+            }
+            
+            mazeCanvas.addEventListener('touchstart', (e) => { if (hintScreenActive) { beginGameplay(e); } else { if (e.touches.length === 1) { touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY; } } }, { passive: false });
+            mazeCanvas.addEventListener('touchmove', (e) => { if (e.touches.length === 1) { if (!touchStartX || !touchStartY) return; e.preventDefault(); let dx = e.touches[0].clientX - touchStartX; let dy = e.touches[0].clientY - touchStartY; if (Math.abs(dx) > 20 || Math.abs(dy) > 20) { const key = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : (dy > 0 ? 'ArrowDown' : 'ArrowUp'); handleGameInput(key); touchStartX = null; touchStartY = null; } } }, { passive: false });
+
+            await preloadAssets();
+            document.getElementById('loader-progress').style.background = `conic-gradient(var(--primary-pink) 360deg, #E0E0E0 0%)`;
+            document.getElementById('loader-percentage').textContent = `100%`;
+            setTimeout(() => {
+                switchScreen('main-menu-screen');
+            }, 250);
+        }
+
+        initialize();
+    });
+    </script>
+</body>
+</html>
+�
