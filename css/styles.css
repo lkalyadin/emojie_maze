@@ -1,5 +1,5 @@
-      :root{--bg-light:#1A1A2E;--card-bg:#16213E;--text-dark:#E0F2F1;--text-secondary:#A9B4C2;--outline:#0F3460;--primary-pink:#E94560;--primary-pink-dark:#e63946;--primary-green:#53BF9D;--primary-green-dark:#45a29e;--primary-yellow:#F9ED69;--primary-yellow-dark:#F08A5D;--star-yellow:#FFD700;--star-gray:#555;--pastel-red:#E94560;--m3-state-layer-opacity:0.15;--focus-outline-color:#53BF9D}
-        body.light-theme{--bg-light:#F5FAF8;--card-bg:#FFFFFF;--text-dark:#4B5563;--text-secondary:#6B7280;--outline:#E5E7EB;--primary-pink:#FECDD3;--primary-pink-dark:#FB92A4;--primary-green:#D1E7DD;--primary-green-dark:#A2C4B4;--primary-yellow:#FFFACD;--primary-yellow-dark:#FADFAD;--star-yellow:#FFD700;--star-gray:#D1D5DB;--pastel-red:#FCA5A5;--m3-state-layer-opacity:0.08}
+     :root{--bg-light:#1A1A2E;--card-bg:#16213E;--text-dark:#E0F2F1;--text-secondary:#A9B4C2;--outline:#0F3460;--primary-pink:#E94560;--primary-pink-dark:#e63946;--primary-green:#53BF9D;--primary-green-dark:#45a29e;--primary-yellow:#F9ED69;--primary-yellow-dark:#F08A5D;--star-yellow:#FFD700;--star-gray:#555;--pastel-red:#E94560;--m3-state-layer-opacity:0.15;--focus-outline-color:#53BF9D; --progress-bar-fill-color: #48C9B0;}
+        body.light-theme{--bg-light:#F5FAF8;--card-bg:#FFFFFF;--text-dark:#4B5563;--text-secondary:#6B7280;--outline:#E5E7EB;--primary-pink:#FECDD3;--primary-pink-dark:#FB92A4;--primary-green:#D1E7DD;--primary-green-dark:#A2C4B4;--primary-yellow:#FFFACD;--primary-yellow-dark:#FADFAD;--star-yellow:#FFD700;--star-gray:#D1D5DB;--pastel-red:#FCA5A5;--m3-state-layer-opacity:0.08; --progress-bar-fill-color: #1ABC9C;}
         body,html{height:100%;width:100%;margin:0;padding:0;overflow:hidden;font-family:'Roboto',sans-serif;background-color:var(--bg-light);color:var(--text-dark);-webkit-tap-highlight-color:transparent;transition:background-color .3s ease,color .3s ease}
         .screen{display:none;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;position:absolute;top:0;left:0;box-sizing:border-box;padding:24px;opacity:0;transition:opacity .4s ease-in-out;visibility:hidden}
         .screen.active{display:flex;opacity:1;visibility:visible}
@@ -17,10 +17,11 @@
         .panel-header{color:var(--text-dark);font-size:2rem;font-weight:700;margin-bottom:16px;flex-shrink:0}
         .menu-button,.mode-card,.level-card,.game-screen-icon-button{-webkit-tap-highlight-color:transparent;outline:none}
         .selected{outline:4px solid var(--focus-outline-color)!important;outline-offset:3px}
-        .menu-button,.mode-card,.level-card{background:var(--card-bg);color:var(--text-dark);border:none;border-radius:16px;padding:16px;text-align:center;cursor:pointer;transition:transform .2s ease-out,box-shadow .2s ease-out;font-size:1.1rem;font-weight:700;width:100%;max-width:380px;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 4px 15px -2px rgba(0,0,0,.2);position:relative}
+        .menu-button,.mode-card,.level-card{background:var(--card-bg);color:var(--text-dark);border:none;border-radius:16px;padding:16px;text-align:center;cursor:pointer;transition:transform .2s ease-out,box-shadow .2s ease-out, background-color .3s ease;font-size:1.1rem;font-weight:700;width:100%;max-width:380px;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 4px 15px -2px rgba(0,0,0,.2);position:relative}
         .menu-button::after,.mode-card::after,.level-card::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background-color:var(--text-dark);opacity:0;transition:opacity .2s ease-out;border-radius:inherit}
-        .menu-button:hover::after,.mode-card:hover::after,.level-card:hover::after{opacity:var(--m3-state-layer-opacity)}
-        .menu-button:hover,.mode-card:hover,.level-card:hover{transform:scale(1.03);box-shadow:0 6px 18px -3px rgba(0,0,0,.25)}
+        .menu-button:not(.locked):hover::after,.mode-card:not(.locked):hover::after,.level-card:not(.locked):hover::after{opacity:var(--m3-state-layer-opacity)}
+        .menu-button:not(.locked):hover,.mode-card:not(.locked):hover,.level-card:not(.locked):hover{transform:scale(1.03);box-shadow:0 6px 18px -3px rgba(0,0,0,.25)}
+        .menu-button.locked, .mode-card.locked, .level-card.locked { opacity: 0.6; cursor: default; background-color: var(--outline); }
         .nav-item.selected,.modal-button.selected{transform:scale(1.05);box-shadow:0 7px 20px -3px rgba(83,191,157,.5)!important}
         #main-menu-screen{position:relative}
         #main-menu-screen .main-menu-container{display:flex;flex-direction:column;align-items:center;gap:20px;z-index:1}
@@ -41,7 +42,9 @@
         .sub-screen-top-bar .back-button{position:static;height:clamp(44px,100%,56px);width:clamp(44px,100%,56px);aspect-ratio:1/1;font-size:1.5rem}
         #game-mode-screen .menu-panel,#settings-screen .menu-panel,#themes-screen .menu-panel{background:none;box-shadow:none;border:none}
         .mode-card{flex-direction:column;gap:8px;padding-bottom:32px}
-        .mode-percentage{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:1rem;font-weight:700;color:var(--text-secondary)}
+        .theme-button { justify-content: space-between !important; }
+        .mode-percentage, .unlock-cost {position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:1rem;font-weight:700;color:var(--text-secondary)}
+        .unlock-cost { display: flex; align-items: center; gap: 4px; }
         #level-selection-screen{justify-content:flex-end}
         #level-selection-screen .menu-panel{height:calc(100% - 80px - env(safe-area-inset-top,10px));width:100%;max-height:100%;justify-content:center;background:none;box-shadow:none;padding-top:80px}
         #level-selection-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));max-width:550px;margin:0 auto;gap:16px;width:100%;padding:10px;flex-grow:1;overflow-y:auto;box-sizing:border-box;padding-bottom:40px}
@@ -86,6 +89,7 @@
         .modal-overlay.visible .modal-content{transform:scale(1)}
         .modal-title{font-size:2.5rem;color:var(--text-dark);margin-bottom:8px;font-weight:900}
         .modal-text{font-size:1rem;color:var(--text-secondary);max-height:60vh;overflow-y:auto;text-align:left;padding-right:10px}
+        #unlock-message { font-size: 1.1rem; color: var(--primary-green); font-weight: 700; margin-top: 16px; }
         .animation-container{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;pointer-events:none}
         .confetti{position:absolute;width:10px;height:10px;background-color:#f00;opacity:0;animation:fall 3s ease-out forwards}
         @keyframes fall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(150px) rotate(720deg);opacity:0}}
@@ -103,44 +107,17 @@
         #about-button{position:absolute;bottom:24px;right:24px;width:70px;height:70px;font-size:3rem;background:none;border:none;box-shadow:none;cursor:pointer;z-index:10;transition:transform .2s ease}
         #about-button:hover,#about-button.selected{transform:scale(1.15)}
         #about-button::after{display:none}
-
-        #minotaur-victory-modal .minotaur-victory-content {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            overflow: hidden;
-        }
-        #minotaur-victory-bg {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 100vw;
-            height: 100vh;
-            font-size: 100vmin;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            opacity: 0.7;
-            line-height: 1;
-        }
-        #minotaur-victory-player, #minotaur-victory-drink, #minotaur-victory-cake {
-            position: absolute;
-            top: 80%;
-            left: 50%;
-            font-size: 15vmin;
-            transform: translate(-50%, -50%);
-            animation: minotaur-jump 1s infinite ease-in-out;
-        }
-        #minotaur-victory-drink {
-            left: 30%;
-            animation-delay: 0.2s;
-        }
-        #minotaur-victory-cake {
-            left: 70%;
-            animation-delay: 0.4s;
-        }
-        @keyframes minotaur-jump {
-            0%, 100% { transform: translate(-50%, -50%) scale(1); }
-            50% { transform: translate(-50%, -65%) scale(1.1); }
-        }
+        .unlock-progress-bar-container { width: 90%; max-width: 500px; z-index: 5; text-align: center; display: none; margin: 16px auto 0; }
+        #main-menu-screen .unlock-progress-bar-container { position: absolute; bottom: 20px; margin: 0; }
+        .progress-bar-wrapper { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 1.5rem; }
+        .progress-bar-track { flex-grow: 1; height: 36px; background-color: var(--outline); border-radius: 18px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); position: relative; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background-color: var(--progress-bar-fill-color); border-radius: 18px; width: 0%; transition: width 0.5s ease-out; }
+        .progress-bar-content { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 0 0 2px rgba(255,255,255,0.7); font-size: 1.1rem; }
+        .sparkle-animation { animation: sparkle 1s ease-in-out; }
+        @keyframes sparkle { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.4) rotate(15deg); text-shadow: 0 0 15px var(--star-yellow); } }
+        #minotaur-victory-modal .minotaur-victory-content { position: relative; width: 100%; height: 100%; overflow: hidden; }
+        #minotaur-victory-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100vw; height: 100vh; font-size: 100vmin; display: flex; align-items: center; justify-content: center; opacity: 0.7; line-height: 1; }
+        #minotaur-victory-player, #minotaur-victory-drink, #minotaur-victory-cake { position: absolute; top: 80%; left: 50%; font-size: 15vmin; transform: translate(-50%, -50%); animation: minotaur-jump 1s infinite ease-in-out; }
+        #minotaur-victory-drink { left: 30%; animation-delay: 0.2s; }
+        #minotaur-victory-cake { left: 70%; animation-delay: 0.4s; }
+        @keyframes minotaur-jump { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -65%) scale(1.1); } }
