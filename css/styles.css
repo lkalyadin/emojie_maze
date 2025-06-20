@@ -830,7 +830,8 @@ body.light-theme .modal-content {
     max-width: 500px;
     z-index: 5;
     text-align: center;
-    display: none;
+    display: block;
+    /* ИЗМЕНЕНИЕ: Убрано display: none;, чтобы JS мог управлять видимостью */
     margin: 16px auto 0;
 }
 
@@ -964,6 +965,14 @@ body.light-theme .modal-content {
 #main-menu-screen .sub-screen-top-bar {
     flex-direction: row-reverse;
     /* Меняет порядок элементов, звезды теперь слева, а кнопка "О разработчике" справа */
+}
+
+/* ИСПРАВЛЕНИЕ: Увеличение иконки "О разработчике" */
+#main-menu-screen .sub-screen-top-bar #about-button {
+    height: clamp(44px, 100%, 56px);
+    width: clamp(44px, 100%, 56px);
+    font-size: 2rem;
+    /* Увеличен размер шрифта для иконки */
 }
 
 /* 2. Исправление вёрстки игрового экрана для симметричных отступов */
