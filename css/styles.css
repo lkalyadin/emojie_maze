@@ -277,7 +277,8 @@ html {
     align-items: center;
     gap: 20px;
     z-index: 1;
-    padding-top: 60px; /* Отступ для верхней панели */
+    padding-top: 60px;
+    /* Отступ для верхней панели */
 }
 
 #main-menu-screen .sub-menu-container {
@@ -961,7 +962,8 @@ body.light-theme .modal-content {
 
 /* 1. Перемещение счетчика звезд в левый верхний угол на главном меню */
 #main-menu-screen .sub-screen-top-bar {
-    flex-direction: row-reverse; /* Меняет порядок элементов, звезды теперь слева, а кнопка "О разработчике" справа */
+    flex-direction: row-reverse;
+    /* Меняет порядок элементов, звезды теперь слева, а кнопка "О разработчике" справа */
 }
 
 /* 2. Исправление вёрстки игрового экрана для симметричных отступов */
@@ -969,8 +971,10 @@ body.light-theme .modal-content {
 /* Контейнер всего игрового экрана */
 #game-screen {
     display: flex;
-    flex-direction: column; /* Располагаем элементы (хедер, игра, D-pad) в колонку */
-    justify-content: space-between; /* Распределяем пространство между элементами */
+    flex-direction: column;
+    /* Располагаем элементы (хедер, игра, D-pad) в колонку */
+    justify-content: space-between;
+    /* Распределяем пространство между элементами */
     padding: 0;
 }
 
@@ -983,7 +987,8 @@ body.light-theme .modal-content {
     padding: 10px 20px;
     box-sizing: border-box;
     padding-top: calc(env(safe-area-inset-top, 10px) + 10px);
-    flex-shrink: 0; /* Запрещаем панели сжиматься */
+    flex-shrink: 0;
+    /* Запрещаем панели сжиматься */
 }
 
 /* Область с лабиринтом */
@@ -993,15 +998,19 @@ body.light-theme .modal-content {
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-grow: 1; /* Разрешаем этой области занимать всё доступное пространство */
-    min-height: 0; /* Техническое свойство для корректной работы flex-grow */
+    flex-grow: 1;
+    /* Разрешаем этой области занимать всё доступное пространство */
+    min-height: 0;
+    /* Техническое свойство для корректной работы flex-grow */
 }
 
 /* Контейнер для D-pad */
 #dpad-container {
     width: 100%;
-    min-height: 60px; /* Всегда резервирует высоту, создавая отступ */
-    flex-shrink: 0; /* Запрещаем контейнеру сжиматься */
+    min-height: 60px;
+    /* Всегда резервирует высоту, создавая отступ */
+    flex-shrink: 0;
+    /* Запрещаем контейнеру сжиматься */
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -1009,7 +1018,8 @@ body.light-theme .modal-content {
     gap: 12px;
     padding: 10px 0;
     z-index: 3;
-    pointer-events: none; /* Контейнер не перехватывает клики, когда пустой */
+    pointer-events: none;
+    /* Контейнер не перехватывает клики, когда пустой */
 }
 
 /* Сами кнопки D-pad */
@@ -1027,8 +1037,10 @@ body.light-theme .modal-content {
     justify-content: center;
     box-shadow: 0 2px 5px rgba(0, 0, 0, .2);
     transition: transform .1s ease;
-    pointer-events: auto; /* Кнопки остаются кликабельными */
-    visibility: hidden; /* По умолчанию кнопки скрыты, но контейнер занимает место */
+    pointer-events: auto;
+    /* Кнопки остаются кликабельными */
+    visibility: hidden;
+    /* По умолчанию кнопки скрыты, но контейнер занимает место */
 }
 
 /* Показываем кнопки, только когда D-pad включен */
