@@ -840,7 +840,7 @@ body.light-theme .modal-content {
     bottom: 24px;
     left: 50%;
     transform: translateX(-50%);
-    width: auto;
+    width: 300px;
     max-width: 300px;
 }
 
