@@ -123,7 +123,7 @@
         .progress-bar-track { flex-grow: 1; height: 36px; background-color: var(--outline); border-radius: 18px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); position: relative; overflow: hidden; }
         .progress-bar-fill { height: 100%; background-color: var(--progress-bar-fill-color); border-radius: 18px; width: 0%; transition: width 0.5s ease-out; }
         .progress-bar-content { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 0 0 2px rgba(255,255,255,0.7); font-size: 1.1rem; }
-        .sparkle-animation { animation: sparkle 0.8s ease-in-out; }
+        .sparkle-animation { animation: sparkle 1s ease-in-out; }
         @keyframes sparkle { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.4) rotate(15deg); text-shadow: 0 0 15px var(--star-yellow); } }
         #minotaur-victory-modal .minotaur-victory-content { position: relative; width: 100%; height: 100%; overflow: hidden; }
         #minotaur-victory-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100vw; height: 100vh; font-size: 100vmin; display: flex; align-items: center; justify-content: center; opacity: 0.7; line-height: 1; }
@@ -439,7 +439,60 @@
         function initiatePlayerMove(e){if(state.isIntroAnimationActive){beginGameplay();setTimeout(()=>initiatePlayerMove(e),50);return}if(!state.isGameActive||state.playerIsDefeated||state.isAnimating)return;if(state.isMoving)return;const{x:t,y:a}=state.playerPos,o=mazeGrid[a][t];let n=!1;switch(e){case"up":if(!o.walls.top)n=!0;break;case"down":if(!o.walls.bottom)n=!0;break;case"left":if(!o.walls.left)n=!0;break;case"right":if(!o.walls.right)n=!0}if(!n)return;hideHint(),state.isMoving=!0,state.playerMoveDirection=e,step(),state.isMoving&&(playerMoveInterval=setInterval(step,160))}
         function handleGameInput(e){if(state.isIntroAnimationActive)return beginGameplay(),void setTimeout(()=>handleGameInput(e),0);let t=null;"ArrowUp"===e||"w"===e?t="up":"ArrowDown"===e||"s"===e?t="down":"ArrowLeft"===e||"a"===e?t="left":"ArrowRight"!==e&&"d"!==e||(t="right"),t&&initiatePlayerMove(t)}
         function startGhostAI(){stopGhostAI();if(!["ghost","all-in-one"].includes(state.gameMode))return;state.ghosts.forEach(e=>{const t=()=>{if(!state.isGameActive||state.isMoving)return void(e.moveTimeout=setTimeout(t,400*Math.random()+800));if(e.isIndicating||!e.path||0===e.path.length)return void(e.moveTimeout=setTimeout(t,400*Math.random()+800));e.pathIndex=(e.pathIndex+1)%e.path.length;e.nextMove=e.path[e.pathIndex];e.isIndicating=!0;e.moveTimeout=setTimeout(()=>{e.nextMove?(e.isIndicating=!1,e.x=e.nextMove.x,e.y=e.nextMove.y,e.targetPos.x=e.x*cellSize+cellSize/2,e.targetPos.y=e.y*cellSize+cellSize/2,e.nextMove=null,checkCollision(),e.moveTimeout=setTimeout(t,400*Math.random()+800)):(e.isIndicating=!1,e.moveTimeout=setTimeout(t,400*Math.random()+800))},500)};e.moveTimeout=setTimeout(t,400*Math.random()+800)})}
-        function startMinotaurAI(){stopMinotaurAI();if("minotaur"!==state.gameMode)return;state.minotaurs.forEach(minotaur=>{const move=()=>{if(!state.isGameActive){minotaur.moveTimeout=setTimeout(move,500+500*Math.random());return}const{x,y}=minotaur,possibleMoves=[],walls=mazeGrid[y][x].walls;!walls.top&&y>0&&possibleMoves.push({x:x,y:y-1}),!walls.bottom&&y<state.mazeHeight-1&&possibleMoves.push({x:x,y:y+1}),!walls.left&&x>0&&possibleMoves.push({x:x-1,y:y}),!walls.right&&x<state.mazeWidth-1&&possibleMoves.push({x:x+1,y:y});if(possibleMoves.length>0){const nextMove=possibleMoves[Math.floor(Math.random()*possibleMoves.length)];minotaur.x=nextMove.x,minotaur.y=nextMove.y,minotaur.targetPos.x=nextMove.x*cellSize+cellSize/2,minotaur.targetPos.y=nextMove.y*cellSize+cellSize/2,checkCollision()}minotaur.moveTimeout=setTimeout(move,500+500*Math.random())};minotaur.moveTimeout=setTimeout(move,500+500*Math.random())})}
+        function startMinotaurAI() {
+            stopMinotaurAI();
+            if (state.gameMode !== 'minotaur') return;
+            state.minotaurs.forEach(minotaur => {
+                const move = () => {
+                    if (!state.isGameActive) {
+                        minotaur.moveTimeout = setTimeout(move, 500 + 500 * Math.random());
+                        return;
+                    }
+
+                    const { x, y } = minotaur;
+                    const possibleMoves = [];
+                    const walls = mazeGrid[y][x].walls;
+
+                    if (!walls.top && y > 0) possibleMoves.push({ x: x, y: y - 1 });
+                    if (!walls.bottom && y < state.mazeHeight - 1) possibleMoves.push({ x: x, y: y + 1 });
+                    if (!walls.left && x > 0) possibleMoves.push({ x: x - 1, y: y });
+                    if (!walls.right && x < state.mazeWidth - 1) possibleMoves.push({ x: x + 1, y: y });
+
+                    if (possibleMoves.length > 0) {
+                        let nextMove;
+                        if (possibleMoves.length === 1) {
+                            nextMove = possibleMoves[0];
+                        } else {
+                            let bestMove = null;
+                            let minDistance = Infinity;
+
+                            for (const move of possibleMoves) {
+                                const distance = Math.abs(move.x - state.playerPos.x) + Math.abs(move.y - state.playerPos.y);
+                                if (distance < minDistance) {
+                                    minDistance = distance;
+                                    bestMove = move;
+                                }
+                            }
+                            
+                            if (Math.random() < 0.75 && bestMove) {
+                                nextMove = bestMove;
+                            } else {
+                                nextMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                            }
+                        }
+
+                        minotaur.x = nextMove.x;
+                        minotaur.y = nextMove.y;
+                        minotaur.targetPos.x = nextMove.x * cellSize + cellSize / 2;
+                        minotaur.targetPos.y = nextMove.y * cellSize + cellSize / 2;
+                        checkCollision();
+                    }
+
+                    minotaur.moveTimeout = setTimeout(move, 500 + 500 * Math.random());
+                };
+                minotaur.moveTimeout = setTimeout(move, 500 + 500 * Math.random());
+            });
+        }
         function checkCollision(){if(state.playerIsDefeated)return;const enemies=[...state.ghosts,...state.minotaurs];for(const enemy of enemies)if(state.playerPos.x===enemy.x&&state.playerPos.y===enemy.y)return state.isGameActive=!1,state.playerIsDefeated=!0,stopPlayerMove(),stopGhostAI(),stopMinotaurAI(),audioManager.playSfx(config.audio.defeatSfx),state.defeatAnimation.progress=0,state.defeatAnimation.bubbles=[],!0;return!1}
         function resizeCanvas(){if("game-screen"!==state.currentScreen)return;const e=document.getElementById("maze-wrapper");if(!e)return;const t=getActiveLevelsConfig();state.currentLevel>=t.length&&(state.currentLevel=t.length-1);const a=t[state.currentLevel];state.mazeWidth=a.w,state.mazeHeight=a.h;const o=state.mazeWidth/state.mazeHeight,n=e.clientWidth/e.clientHeight;let s,i;n>o?(i=e.clientHeight,s=i*o):(s=e.clientWidth,i=s/o);const l=window.devicePixelRatio||1;dom.mazeCanvas.style.width=`${s}px`,dom.mazeCanvas.style.height=`${i}px`,dom.mazeCanvas.width=Math.floor(s*l),dom.mazeCanvas.height=Math.floor(i*l),mazeCtx.scale(l,l),cellSize=Math.floor(Math.min(s/state.mazeWidth,i/state.mazeHeight)),targetPos.x=displayPos.x=state.playerPos.x*cellSize+cellSize/2,targetPos.y=displayPos.y=state.playerPos.y*cellSize+cellSize/2,state.ghosts.forEach(e=>{e.displayPos.x=e.targetPos.x=e.x*cellSize+cellSize/2,e.displayPos.y=e.targetPos.y=e.y*cellSize+cellSize/2}),state.minotaurs.forEach(e=>{e.displayPos.x=e.targetPos.x=e.x*cellSize+cellSize/2,e.displayPos.y=e.targetPos.y=e.y*cellSize+cellSize/2})}
         function startGame(e){const levels=getActiveLevelsConfig();if(!levels||e>=levels.length){console.error("Invalid level configuration for mode:",state.gameMode,"level:",e),goToMainMenu();return}const levelConfig=levels[e];switchScreen("game-screen"),state.currentLevel=e,state.playerIsDefeated=!1,state.isTimerDefeat=!1,state.collectedDecor=0,state.totalDecor=0,state.ghosts=[],state.startGhosts=[],state.minotaurs=[],state.startMinotaurs=[],dom.timerDisplay.classList.remove("warning");const unlockedThemes=Object.keys(config.themes).filter(t=>state.unlocked.themes.includes(t));let themeToUse=state.theme;state.theme==="random"&&(themeToUse=unlockedThemes[Math.floor(Math.random()*unlockedThemes.length)]);currentTheme=JSON.parse(JSON.stringify(config.themes[themeToUse||"jungle"])),currentBgImage=loadedBackgroundImages[Math.floor(Math.random()*loadedBackgroundImages.length)],state.mazeWidth=levelConfig.w,state.mazeHeight=levelConfig.h;const mazeAlgorithm=levelConfig.mazeAlgorithm||"recursiveBacktracker";if("minotaur"===state.gameMode)currentTheme.finish=e<4?"🪜":"🏞️",currentTheme.decor=["🪙","💎"],state.finishPos={x:Math.floor(state.mazeWidth/2),y:Math.floor(state.mazeHeight/2)};else{const corners=[{x:0,y:0},{x:state.mazeWidth-1,y:0},{x:0,y:state.mazeHeight-1},{x:state.mazeWidth-1,y:state.mazeHeight-1}];"sidewinder"===mazeAlgorithm?state.startPos={x:Math.floor(Math.random()*state.mazeWidth),y:state.mazeHeight-1}:state.startPos={...corners[Math.floor(Math.random()*corners.length)]}}mazeGrid=generateMaze(state.mazeWidth,state.mazeHeight,state.startPos,mazeAlgorithm),"minotaur"!==state.gameMode&&(state.finishPos=findLongestPath(mazeGrid,mazeGrid[state.startPos.y][state.startPos.x])),addDecorations(mazeGrid,state.startPos,state.finishPos,levelConfig.bonuses),state.playerPos={...state.startPos};if("ghost"===state.gameMode||"all-in-one"===state.gameMode)for(let i=0;i<levelConfig.ghosts;i++){let ghostStartPos;const availablePos=[];for(let y=0;y<state.mazeHeight;y++)for(let x=0;x<state.mazeWidth;x++)Math.abs(x-state.playerPos.x)>3||Math.abs(y-state.playerPos.y)>3&&availablePos.push({x:x,y:y});ghostStartPos=availablePos.length>0?availablePos[Math.floor(Math.random()*availablePos.length)]:{x:Math.floor(Math.random()*state.mazeWidth),y:Math.floor(Math.random()*state.mazeHeight)};let patrolParams=levelConfig.ghostPatrol||{w:3,h:3},patrolPath=[];if(Math.random()<.5){const halfW=Math.floor((patrolParams.w-1)/2),halfH=Math.floor((patrolParams.h-1)/2),top=Math.max(0,ghostStartPos.y-halfH),bottom=Math.min(state.mazeHeight-1,ghostStartPos.y+halfH),left=Math.max(0,ghostStartPos.x-halfW),right=Math.min(state.mazeWidth-1,ghostStartPos.x+halfW);if(left===right&&top===bottom)patrolPath.push({x:left,y:top});else{for(let i=left;i<right;i++)patrolPath.push({x:i,y:top});for(let i=top;i<bottom;i++)patrolPath.push({x:right,y:i});for(let i=right;i>left;i--)patrolPath.push({x:i,y:bottom});for(let i=bottom;i>top;i--)patrolPath.push({x:left,y:i})}}else{const halfW=Math.floor((patrolParams.w-1)/2),halfH=Math.floor((patrolParams.h-1)/2),topY=Math.max(0,ghostStartPos.y-halfH),bottomY=Math.min(state.mazeHeight-1,ghostStartPos.y+halfH),leftX=Math.max(0,ghostStartPos.x-halfW),rightX=Math.min(state.mazeWidth-1,ghostStartPos.x+halfW);for(let i=ghostStartPos.x+1;i<=rightX;i++)patrolPath.push({x:i,y:ghostStartPos.y});for(let i=rightX;i>ghostStartPos.x;i--)patrolPath.push({x:i,y:ghostStartPos.y});for(let i=ghostStartPos.y+1;i<=bottomY;i++)patrolPath.push({x:ghostStartPos.x,y:i});for(let i=bottomY;i>ghostStartPos.y;i--)patrolPath.push({x:ghostStartPos.x,y:i});for(let i=ghostStartPos.x-1;i>=leftX;i--)patrolPath.push({x:i,y:ghostStartPos.y});for(let i=leftX;i<ghostStartPos.x;i++)patrolPath.push({x:i,y:ghostStartPos.y});for(let i=ghostStartPos.y-1;i>=topY;i--)patrolPath.push({x:ghostStartPos.x,y:i});for(let i=topY;i<ghostStartPos.y;i++)patrolPath.push({x:ghostStartPos.x,y:i})}0===patrolPath.length&&patrolPath.push({x:ghostStartPos.x,y:ghostStartPos.y});const ghost={...ghostStartPos,displayPos:{x:ghostStartPos.x*cellSize+cellSize/2,y:ghostStartPos.y*cellSize+cellSize/2},targetPos:{x:ghostStartPos.x*cellSize+cellSize/2,y:ghostStartPos.y*cellSize+cellSize/2},isIndicating:!1,nextMove:null,path:patrolPath,pathIndex:0,moveTimeout:null};state.ghosts.push(ghost),state.startGhosts.push({...ghostStartPos})}else if("minotaur"===state.gameMode)for(let i=0;i<levelConfig.minotaurs;i++){let minotaurStart={x:state.finishPos.x,y:state.finishPos.y};const minotaur={...minotaurStart,displayPos:{x:minotaurStart.x*cellSize+cellSize/2,y:minotaurStart.y*cellSize+cellSize/2},targetPos:{x:minotaurStart.x*cellSize+cellSize/2,y:minotaurStart.y*cellSize+cellSize/2},moveTimeout:null};state.minotaurs.push(minotaur),state.startMinotaurs.push({...minotaurStart})}if(["timer","all-in-one","minotaur"].includes(state.gameMode))dom.timerDisplay.style.display="flex",state.gameTimer.timeLeft=levelConfig.timer,updateTimerDisplay(),state.gameTimer.id=setInterval(countdown,1e3);else dom.timerDisplay.style.display="none";initialMazeGrid=JSON.parse(JSON.stringify(mazeGrid)),updateDecorCounter(),setTimeout(()=>{resizeCanvas(),stopGameLoop(),startIntroPhase()},50)}
@@ -487,6 +540,7 @@
             
             if (!fill || !label) return;
 
+            audioManager.playSfx('https://lkalyadin.github.io/emojie_maze/assets/audio/sfx-piano-coda3.mp3');
             fill.style.transition = 'width 0.5s ease-out';
             fill.style.width = '100%';
             label.classList.add('sparkle-animation');
