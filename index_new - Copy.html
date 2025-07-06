@@ -1,0 +1,770 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Emoji Maze</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root{--bg-light:#1A1A2E;--card-bg:#16213E;--text-dark:#E0F2F1;--text-secondary:#A9B4C2;--outline:#0F3460;--primary-pink:#E94560;--primary-pink-dark:#e63946;--primary-green:#53BF9D;--primary-green-dark:#45a29e;--primary-yellow:#F9ED69;--primary-yellow-dark:#F08A5D;--star-yellow:#FFD700;--star-gray:#555;--pastel-red:#E94560;--m3-state-layer-opacity:0.15;--focus-outline-color:#53BF9D; --progress-bar-fill-color: #48C9B0;}
+        body.light-theme{--bg-light:#F5FAF8;--card-bg:#FFFFFF;--text-dark:#4B5563;--text-secondary:#6B7280;--outline:#E5E7EB;--primary-pink:#FECDD3;--primary-pink-dark:#FB92A4;--primary-green:#D1E7DD;--primary-green-dark:#A2C4B4;--primary-yellow:#FFFACD;--primary-yellow-dark:#FADFAD;--star-yellow:#FFD700;--star-gray:#D1D5DB;--pastel-red:#FCA5A5;--m3-state-layer-opacity:0.08; --progress-bar-fill-color: #1ABC9C;}
+        body,html{height:100%;width:100%;margin:0;padding:0;overflow:hidden;font-family:'Roboto',sans-serif;background-color:var(--bg-light);color:var(--text-dark);-webkit-tap-highlight-color:transparent;transition:background-color .3s ease,color .3s ease}
+        .screen{display:none;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;position:absolute;top:0;left:0;box-sizing:border-box;padding:24px;opacity:0;transition:opacity .4s ease-in-out;visibility:hidden}
+        .screen.active{display:flex;opacity:1;visibility:visible}
+        .background-emojis{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;z-index:0}
+        .background-emojis span{position:absolute;font-size:3rem;opacity:0;will-change:transform,opacity}
+        .background-emojis span.animated{animation:fadeInOut 12s infinite ease-in-out}
+        @keyframes fadeInOut{0%,100%{opacity:0;transform:scale(.9)}50%{opacity:.1;transform:scale(1)}}
+        #loading-screen{background-color:var(--bg-light);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;z-index:999}
+        #loading-screen .loader-container{position:relative;width:150px;height:150px}
+        #loading-screen .loader{width:150px;height:150px;border-radius:50%;background:conic-gradient(var(--primary-green) 0%,var(--primary-pink) 50%,var(--primary-green) 100%);animation:rotateLoader 2s linear infinite}
+        #loading-screen .loader-inner{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:120px;height:120px;background:var(--bg-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:2.5rem;color:var(--text-dark);box-shadow:inset 0 0 10px rgba(0,0,0,.1)}
+        @keyframes rotateLoader{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+        #loading-screen p{font-size:1.2rem;color:var(--text-secondary)}
+        .menu-panel{background-color:var(--card-bg);border:none;border-radius:28px;padding:24px;width:90%;max-width:500px;box-shadow:0 10px 30px -5px rgba(0,0,0,.2);display:flex;flex-direction:column;align-items:center;gap:16px;position:relative;z-index:1;overflow-y:auto;max-height:90vh;transition:background-color .3s ease,border-color .3s ease}
+        .panel-header{color:var(--text-dark);font-size:2rem;font-weight:700;margin-bottom:16px;flex-shrink:0}
+        .menu-button,.mode-card,.level-card,.game-screen-icon-button{-webkit-tap-highlight-color:transparent;outline:none}
+        .selected{outline:4px solid var(--focus-outline-color)!important;outline-offset:3px}
+        .menu-button,.mode-card,.level-card{background:var(--card-bg);color:var(--text-dark);border:none;border-radius:16px;padding:16px;text-align:center;cursor:pointer;transition:transform .2s ease-out,box-shadow .2s ease-out, background-color .3s ease;font-size:1.1rem;font-weight:700;width:100%;max-width:380px;display:flex;align-items:center;justify-content:center;gap:12px;box-shadow:0 4px 15px -2px rgba(0,0,0,.2);position:relative}
+        .menu-button::after,.mode-card::after,.level-card::after{content:'';position:absolute;top:0;left:0;right:0;bottom:0;background-color:var(--text-dark);opacity:0;transition:opacity .2s ease-out;border-radius:inherit}
+        .menu-button:not(.locked):hover::after,.mode-card:not(.locked):hover::after,.level-card:not(.locked):hover::after{opacity:var(--m3-state-layer-opacity)}
+        .menu-button:not(.locked):hover,.mode-card:not(.locked):hover,.level-card:not(.locked):hover{transform:scale(1.03);box-shadow:0 6px 18px -3px rgba(0,0,0,.25)}
+        .menu-button.locked, .mode-card.locked, .level-card.locked { opacity: 0.6; cursor: default; background-color: var(--outline); }
+        .nav-item.selected,.modal-button.selected{transform:scale(1.05);box-shadow:0 7px 20px -3px rgba(83,191,157,.5)!important}
+        #main-menu-screen{position:relative}
+        #main-menu-screen .main-menu-container{display:flex;flex-direction:column;align-items:center;gap:20px;z-index:1}
+        #main-menu-screen .sub-menu-container{display:flex;gap:20px}
+        #play-button,#themes-button,#settings-button,#sound-toggle-button{background:var(--card-bg);color:var(--text-dark);border-radius:50%;box-shadow:0 4px 15px -2px rgba(0,0,0,.2);transition:transform .2s ease,box-shadow .2s ease;padding:0;flex-grow:0;border:none;display:flex;align-items:center;justify-content:center}
+        #play-button:hover,#themes-button:hover,#settings-button:hover,#sound-toggle-button:hover{transform:scale(1.1);box-shadow:0 6px 20px -2px rgba(0,0,0,.3)}
+        #play-button::after,#themes-button::after,#settings-button::after,#sound-toggle-button::after{display:none}
+        #play-button{width:140px;height:140px;background-color:var(--primary-pink);color:#fff}
+        #themes-button,#settings-button,#sound-toggle-button{width:90px;height:90px}
+        #play-button .play-icon,#themes-button .card-icon,#settings-button .card-icon,#sound-toggle-button .card-icon{margin:0}
+        #play-button .play-icon{font-size:5rem}
+        #themes-button .card-icon,#settings-button .card-icon,#sound-toggle-button .card-icon{font-size:3rem}
+        #main-menu-screen .nav-item.selected{box-shadow:0 6px 20px -2px rgba(83,191,157,.5);transform:scale(1.05);border:none}
+        #total-stars-counter{position:absolute;top:0;right:0;padding:calc(env(safe-area-inset-top,10px)) 24px 0;box-sizing:border-box;display:flex;align-items:center;z-index:10}
+        .stars-display{background-color:var(--card-bg);padding:8px 16px;border-radius:16px;box-shadow:0 4px 15px -2px rgba(0,0,0,.2);font-size:1.5rem;font-weight:700;display:flex;align-items:center;gap:8px}
+        #game-mode-screen,#settings-screen,#themes-screen,#level-selection-screen{justify-content:center;padding:0;position:relative}
+        .sub-screen-top-bar{position:absolute;top:0;left:0;width:100%;display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top,10px) + 10px) 24px 10px;box-sizing:border-box;z-index:11}
+        .sub-screen-top-bar .back-button{position:static;height:clamp(44px,100%,56px);width:clamp(44px,100%,56px);aspect-ratio:1/1;font-size:1.5rem}
+        #game-mode-screen .menu-panel,#settings-screen .menu-panel,#themes-screen .menu-panel{background:none;box-shadow:none;border:none}
+        .mode-card{flex-direction:column;gap:8px;padding-bottom:32px}
+        .theme-button { justify-content: space-between !important; }
+        .mode-percentage, .unlock-cost {position:absolute;bottom:10px;left:50%;transform:translateX(-50%);font-size:1rem;font-weight:700;color:var(--text-secondary)}
+        .unlock-cost { display: flex; align-items: center; gap: 4px; }
+        #level-selection-screen{justify-content:flex-end}
+        #level-selection-screen .menu-panel{height:calc(100% - 80px - env(safe-area-inset-top,10px));width:100%;max-height:100%;justify-content:center;background:none;box-shadow:none;padding-top:80px}
+        #level-selection-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(80px,1fr));max-width:550px;margin:0 auto;gap:16px;width:100%;padding:10px;flex-grow:1;overflow-y:auto;box-sizing:border-box;padding-bottom:40px}
+        .level-card{background-color:var(--card-bg);border:none;flex-direction:column;aspect-ratio:1/1;padding:8px;font-size:1.8rem;min-height:80px;box-shadow:0 4px 15px -2px rgba(0,0,0,.2);position:relative;display:flex;justify-content:center;align-items:center}
+        .level-number{font-size:1.8rem;margin-bottom:4px;z-index:1;line-height:1}
+        .level-stars{font-size:.8rem;height:1em;line-height:1;white-space:nowrap;z-index:0;margin-top:2px}
+        .level-stars .star{color:var(--star-gray);font-size:.8em}
+        .level-stars .star.filled{color:var(--star-yellow)}
+        #game-screen{padding:0;justify-content:space-between}
+        #game-top-ui{width:100%;display:flex;justify-content:space-between;align-items:center;padding:10px 20px;box-sizing:border-box;padding-top:calc(env(safe-area-inset-top,10px) + 10px)}
+        .top-left-buttons{display:flex;align-items:center;gap:15px;flex:1}
+        .top-right-ui{display:flex;align-items:center;gap:15px;flex:1;justify-content:flex-end}
+        #timer-container{flex:1;display:flex;justify-content:center}
+        .game-button-panel{background-color:var(--card-bg);border-radius:24px;box-shadow:0 4px 15px -2px rgba(0,0,0,.2);display:flex;align-items:center;padding:4px;gap:8px}
+        .game-button-panel .game-screen-icon-button{background:transparent;box-shadow:none;color:var(--text-dark);width:44px;height:44px}
+        .game-button-panel .game-screen-icon-button:hover{background-color:rgba(255,255,255,.1);transform:scale(1.1);box-shadow:none}
+        #game-top-ui .game-screen-icon-button{position:static;width:clamp(40px,100%,48px);height:clamp(40px,100%,48px);font-size:1.5rem}
+        #game-top-ui #decor-counter,#game-top-ui #timer-display{position:static}
+        .game-screen-icon-button{position:relative;border-radius:50%;padding:0;z-index:100;border:none;background:var(--card-bg);color:var(--text-dark);box-shadow:0 4px 15px -2px rgba(0,0,0,.2);cursor:pointer;transition:transform .2s ease,box-shadow .2s ease;display:flex;align-items:center;justify-content:center}
+        .game-screen-icon-button:hover{transform:scale(1.1);box-shadow:0 6px 20px -2px rgba(0,0,0,.3)}
+        #restart-game-button:hover{transform:scale(1.1) rotate(25deg)}
+        #game-area-wrapper{width:100%;height:90%;margin:0 auto;display:flex;align-items:center;justify-content:center}
+        #maze-wrapper{position:relative;width:100%;height:100%;min-height:0;display:flex;align-items:center;justify-content:center}
+        #maze-container{position:relative;z-index:2;max-width:100%;max-height:100%}
+        #maze-canvas{border-radius:16px;display:block;max-width:100%;max-height:100%}
+        #dpad-container{width:100%;height:5%;min-height:60px;flex-shrink:0;display:none;flex-direction:row;justify-content:center;align-items:center;gap:12px;padding:10px 0;z-index:3;pointer-events:all}
+        #game-screen.dpad-on #dpad-container{display:flex}
+        #game-screen.dpad-on #game-area-wrapper{height:85%}
+        .dpad-btn{width:60px;height:60px;background-color:var(--card-bg);color:var(--text-dark);border:none;border-radius:50%;font-size:2.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 5px rgba(0,0,0,.2);transition:transform .1s ease}
+        .dpad-btn:active{transform:scale(.95);background-color:var(--primary-green)}
+        #dpad-left{order:1} #dpad-right{order:2} #dpad-down{order:3} #dpad-up{order:4}
+        #dpad-toggle-button .dpad-status{font-size:1.2rem;margin-left:auto;padding-left:8px}
+        #decor-counter{background:var(--card-bg);padding:8px 16px;border-radius:12px;font-size:1.5rem;font-weight:700;color:var(--text-dark);box-shadow:0 4px 15px -2px rgba(0,0,0,.2);display:none}
+        #timer-display{font-weight:700;color:var(--text-dark);height:100%;display:none;align-items:center;background-color:var(--card-bg);padding:8px 16px;border-radius:16px;box-shadow:0 4px 15px -2px rgba(0,0,0,.2);font-size:1.5rem;gap:8px}
+        #timer-display.warning{color:var(--primary-pink);animation:pulse-red 1s infinite}
+        @keyframes pulse-red{0%{transform:scale(1)}50%{transform:scale(1.05)}100%{transform:scale(1)}}
+        #resolution-display{justify-content:flex-start;cursor:default;background:transparent;border:none;box-shadow:none;color:var(--text-secondary);font-weight:500;pointer-events:none}
+        .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:200;opacity:0;transition:opacity .3s ease,visibility 0s .3s;visibility:hidden;pointer-events:none}
+        .modal-overlay.visible{opacity:1;visibility:visible;transition:opacity .3s ease,visibility 0s;pointer-events:auto}
+        .modal-content{background-image:linear-gradient(to top right,var(--card-bg),#2C3E50);border:none;color:var(--text-dark);padding:24px;border-radius:28px;text-align:center;width:90%;max-width:400px;box-shadow:0 10px 20px rgba(0,0,0,.1);transform:scale(.9);transition:transform .3s ease-out;position:relative}
+        body.light-theme .modal-content{background-image:linear-gradient(to top right,var(--card-bg),#D1E7DD)}
+        .modal-overlay.visible .modal-content{transform:scale(1)}
+        .modal-title{font-size:2.5rem;color:var(--text-dark);margin-bottom:8px;font-weight:900}
+        .modal-text{font-size:1rem;color:var(--text-secondary);max-height:60vh;overflow-y:auto;text-align:left;padding-right:10px}
+        #unlock-message { font-size: 1.1rem; color: var(--primary-green); font-weight: 700; margin-top: 16px; }
+        .animation-container{position:absolute;top:0;left:0;width:100%;height:100%;overflow:hidden;pointer-events:none}
+        .confetti{position:absolute;width:10px;height:10px;background-color:#f00;opacity:0;animation:fall 3s ease-out forwards}
+        @keyframes fall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(150px) rotate(720deg);opacity:0}}
+        .modal-buttons{display:flex;justify-content:center;align-items:center;gap:16px;margin-top:24px}
+        .modal-buttons .menu-button{width:auto;max-width:none}
+        .emoji-button{font-size:2rem;padding:8px 16px!important;text-shadow:none;background:transparent!important;box-shadow:none!important;border:none!important}
+        .emoji-button:hover{transform:scale(1.1)}
+        #victory-modal #next-level-button:not(:hover){transform:scale(1.25)}
+        #victory-modal #next-level-button:hover{transform:scale(1.35)}
+        #star-rating-container{display:flex;justify-content:center;gap:10px;margin:16px 0}
+        .star{font-size:2.5rem;transform:scale(0);opacity:0;animation:popIn .5s cubic-bezier(.68,-.55,.27,1.55) forwards}
+        .star.yellow{color:var(--star-yellow)} .star.gray{color:var(--star-gray)}
+        .star:nth-child(2){animation-delay:.2s} .star:nth-child(3){animation-delay:.4s}
+        @keyframes popIn{to{transform:scale(1);opacity:1}}
+        #about-button{position:absolute;bottom:24px;right:24px;width:70px;height:70px;font-size:3rem;background:none;border:none;box-shadow:none;cursor:pointer;z-index:10;transition:transform .2s ease}
+        #about-button:hover,#about-button.selected{transform:scale(1.15)}
+        #about-button::after{display:none}
+        .unlock-progress-bar-container { width: 90%; max-width: 500px; z-index: 5; text-align: center; display: none; margin: 16px auto 0; }
+        #main-menu-screen .unlock-progress-bar-container { position: absolute; bottom: 20px; margin: 0; }
+        .progress-bar-wrapper { display: flex; align-items: center; gap: 12px; font-weight: 700; font-size: 1.5rem; }
+        .progress-bar-track { flex-grow: 1; height: 36px; background-color: var(--outline); border-radius: 18px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); position: relative; overflow: hidden; }
+        .progress-bar-fill { height: 100%; background-color: var(--progress-bar-fill-color); border-radius: 18px; width: 0%; transition: width 0.5s ease-out; }
+        .progress-bar-content { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; color: #000; font-weight: 900; text-shadow: 0 0 2px rgba(255,255,255,0.7); font-size: 1.1rem; }
+        .sparkle-animation { animation: sparkle 1s ease-in-out; }
+        @keyframes sparkle { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.4) rotate(15deg); text-shadow: 0 0 15px var(--star-yellow); } }
+        #minotaur-victory-modal .minotaur-victory-content { position: relative; width: 100%; height: 100%; overflow: hidden; }
+        #minotaur-victory-bg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100vw; height: 100vh; font-size: 100vmin; display: flex; align-items: center; justify-content: center; opacity: 0.7; line-height: 1; }
+        #minotaur-victory-player, #minotaur-victory-drink, #minotaur-victory-cake { position: absolute; top: 80%; left: 50%; font-size: 15vmin; transform: translate(-50%, -50%); animation: minotaur-jump 1s infinite ease-in-out; }
+        #minotaur-victory-drink { left: 30%; animation-delay: 0.2s; }
+        #minotaur-victory-cake { left: 70%; animation-delay: 0.4s; }
+        @keyframes minotaur-jump { 0%, 100% { transform: translate(-50%, -50%) scale(1); } 50% { transform: translate(-50%, -65%) scale(1.1); } }
+    </style>
+</head>
+<body>
+    <div id="loading-screen" class="screen active">
+        <div class="loader-container">
+            <div class="loader"></div>
+            <div class="loader-inner">🎮</div>
+        </div>
+    </div>
+    <div id="main-menu-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div id="total-stars-counter"><div class="stars-display">⭐ 0</div></div>
+        <div class="main-menu-container">
+            <button id="play-button" class="menu-button nav-item" data-nav-index="0"><span class="play-icon">▶️</span></button>
+            <div class="sub-menu-container">
+                 <button id="themes-button" class="menu-button nav-item" data-nav-index="1"><span class="card-icon">🎨</span></button>
+                 <button id="settings-button" class="menu-button nav-item" data-nav-index="2"><span class="card-icon">⚙️</span></button>
+                 <button id="sound-toggle-button" class="menu-button nav-item" data-nav-index="3"><span class="card-icon">🔊</span></button>
+            </div>
+        </div>
+        <div id="main-menu-progress-bar" class="unlock-progress-bar-container">
+            <div class="progress-bar-wrapper">
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill"></div>
+                    <div class="progress-bar-content"></div>
+                </div>
+                <span class="required-stars-label"></span>
+            </div>
+        </div>
+        <button id="about-button" class="nav-item" data-nav-index="4">🧾</button>
+    </div>
+    <div id="game-mode-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div class="sub-screen-top-bar">
+            <button class="game-screen-icon-button back-button nav-item" data-target-screen="main-menu-screen" data-nav-index="0">🏠</button>
+            <div class="stars-clone stars-display">⭐ 0</div>
+        </div>
+        <div class="menu-panel">
+            </div>
+    </div>
+    <div id="level-selection-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div class="sub-screen-top-bar">
+            <button class="game-screen-icon-button back-button nav-item" data-target-screen="game-mode-screen" data-nav-index="0">⬅️</button>
+            <div id="total-stars-counter-levels" class="stars-clone stars-display">⭐ 0</div>
+        </div>
+        <div class="menu-panel"><div id="level-selection-grid"></div></div>
+    </div>
+    <div id="settings-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div class="sub-screen-top-bar">
+            <button class="game-screen-icon-button back-button nav-item" data-target-screen="main-menu-screen" data-nav-index="0">🏠</button>
+            <div class="stars-clone stars-display">⭐ 0</div>
+        </div>
+        <div class="menu-panel">
+            <button id="dpad-toggle-button" class="menu-button nav-item" data-nav-index="1" style="justify-content:flex-start" data-cheat-key="dpad"><span class="card-icon">🕹️</span><span style="margin-left:12px"> D-pad</span><span class="dpad-status"></span></button>
+            <button id="theme-toggle-button" class="menu-button nav-item" data-nav-index="2" style="justify-content:flex-start" data-cheat-key="theme"><span class="card-icon"></span><span style="margin-left:12px" data-lang="color_theme"></span></button>
+            <button id="language-button" class="menu-button nav-item" data-nav-index="3" style="justify-content:flex-start" data-cheat-key="lang"><span class="card-icon">🌐</span><span class="lang-text" style="margin-left:12px"></span></button>
+            <button id="reset-progress-button" class="menu-button nav-item" data-nav-index="4" style="background-color:var(--primary-pink);justify-content:flex-start" data-cheat-key="reset"><span class="card-icon">🗑️</span><span style="margin-left:12px" data-lang="reset_progress"></span></button>
+        </div>
+    </div>
+    <div id="themes-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div class="sub-screen-top-bar">
+             <button class="game-screen-icon-button back-button nav-item" data-target-screen="main-menu-screen" data-nav-index="0">🏠</button>
+             <div class="stars-clone stars-display">⭐ 0</div>
+        </div>
+        <div class="menu-panel">
+             <button id="random-theme-button" class="menu-button nav-item" data-nav-index="1" data-theme-key="random" tabindex="0"><span data-lang="random_theme"></span></button>
+             </div>
+    </div>
+    <div id="game-screen" class="screen">
+        <div class="background-emojis"></div>
+        <div id="game-top-ui">
+             <div class="top-left-buttons"><div class="game-button-panel"><button id="return-menu-button" class="game-screen-icon-button">🏠</button><button id="restart-game-button" class="game-screen-icon-button">🔄</button><button id="hint-button" class="game-screen-icon-button">💡</button></div></div>
+             <div id="timer-container"><div id="timer-display"></div></div>
+             <div class="top-right-ui"><div id="decor-counter"></div></div>
+        </div>
+        <div id="game-area-wrapper"><div id="maze-wrapper"><div id="maze-container"><canvas id="maze-canvas"></canvas></div></div></div>
+        <div id="dpad-container"><button id="dpad-left" class="dpad-btn">⬅️</button><button id="dpad-right" class="dpad-btn">➡️</button><button id="dpad-down" class="dpad-btn">⬇️</button><button id="dpad-up" class="dpad-btn">⬆️</button></div>
+    </div>
+    <div id="victory-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="animation-container"></div>
+            <h1 class="modal-title">🎉</h1>
+            <div id="star-rating-container"></div>
+            <div id="victory-progress-bar" class="unlock-progress-bar-container">
+                 <div class="progress-bar-wrapper">
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill"></div>
+                        <div class="progress-bar-content"></div>
+                    </div>
+                    <span class="required-stars-label"></span>
+                </div>
+            </div>
+            <div id="unlock-message"></div>
+            <div class="modal-buttons"><button id="menu-button-victory" class="menu-button emoji-button modal-button" data-modal-nav-index="0">🏠</button><button id="next-level-button" class="menu-button emoji-button modal-button" data-modal-nav-index="1">▶️</button><button id="retry-level-button-victory" class="menu-button emoji-button modal-button" data-modal-nav-index="2">🔄</button></div>
+        </div>
+    </div>
+    <div id="minotaur-victory-modal" class="modal-overlay">
+        <div class="minotaur-victory-content">
+            <div id="minotaur-victory-bg">🏖️</div>
+            <div id="minotaur-victory-player"></div>
+            <div id="minotaur-victory-drink">🍹</div>
+            <div id="minotaur-victory-cake">🎂</div>
+        </div>
+    </div>
+    <div id="confirm-exit-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title" data-lang="confirm_exit_title"></h2><p class="modal-text" data-lang="confirm_exit_text"></p>
+            <div class="modal-buttons"><button id="confirm-exit-no" class="menu-button emoji-button modal-button" data-modal-nav-index="0">❌</button><button id="confirm-exit-yes" class="menu-button emoji-button modal-button" data-modal-nav-index="1">✅</button></div>
+        </div>
+    </div>
+    <div id="confirm-reset-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title" data-lang="confirm_reset_title"></h2><p class="modal-text" data-lang="confirm_reset_text"></p>
+            <div class="modal-buttons"><button id="confirm-reset-no" class="menu-button emoji-button modal-button" data-modal-nav-index="0">❌</button><button id="confirm-reset-yes" class="menu-button emoji-button modal-button" data-modal-nav-index="1">✅</button></div>
+        </div>
+    </div>
+    <div id="tv-back-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title">🌌</h2>
+            <div class="modal-buttons"><button id="tv-back-home" class="menu-button emoji-button modal-button" data-modal-nav-index="0">🏠</button><button id="tv-back-restart" class="menu-button emoji-button modal-button" data-modal-nav-index="1">🔄</button><button id="tv-back-hint" class="menu-button emoji-button modal-button" data-modal-nav-index="2">💡</button><button id="tv-back-cancel" class="menu-button emoji-button modal-button" data-modal-nav-index="3">❌</button></div>
+        </div>
+    </div>
+    <div id="about-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title" data-lang="about_title"></h2><p class="modal-text" data-lang="about_text"></p>
+            <div class="modal-buttons"><button id="about-modal-close" class="menu-button emoji-button modal-button" data-modal-nav-index="0">✅</button></div>
+        </div>
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const config = {
+            unlocks: [
+                { stars: 3, type: 'mode', key: 'flashlight', emoji: '🔦' },
+                { stars: 10, type: 'theme', key: 'dog', emoji: '🐕' },
+                { stars: 30, type: 'theme', key: 'catsAndMice', emoji: '🐈' },
+                { stars: 50, type: 'mode', key: 'ghost', emoji: '👻' },
+                { stars: 70, type: 'theme', key: 'football', emoji: '⚽' },
+                { stars: 100, type: 'theme', key: 'forest', emoji: '🐿️' },
+                { stars: 150, type: 'mode', key: 'timer', emoji: '⏰' },
+                { stars: 200, type: 'theme', key: 'sea', emoji: '🐬' },
+                { stars: 250, type: 'theme', key: 'desert', emoji: '🐪' },
+                { stars: 300, type: 'mode', key: 'all-in-one', emoji: '🗺️🔦👻⏰' },
+                { stars: 350, type: 'theme', key: 'new_year', emoji: '🎁' },
+                { stars: 400, type: 'mode', key: 'minotaur', emoji: '🐂' },
+                { stars: 465, type: 'final', key: 'crown', emoji: '👑' }
+            ],
+            backgrounds:['/assets/images/abstract-design-element-pink-3595.png','/assets/images/abstract-design-element-blue-purple-3588.png','/assets/images/abstract-design-element-pink-3599.png','/assets/images/abstract-design-element-pink-orange-3585.png','/assets/images/abstract-design-element-purple-3557.png','/assets/images/abstract-design-element-purple-3560.png','/assets/images/abstract-design-element-purple-3569.png','/assets/images/abstract-design-element-purple-3570.png','/assets/images/abstract-design-element-shape-purple-3463.png','/assets/images/abstract-design-element-shape-yellow-3472.png','/assets/images/abstract-design-element-shape-yellow-3474.png','/assets/images/abstract-design-element-yellow-orange-3575.png','/assets/images/abstract-design-element-yellow-orange-3577.png','/assets/images/design-element-wave-blue-3689.png'],
+            levels_portrait: [
+                {h:8,w:4,bonuses:0,visibility:{h:2,w:2},timer:30,ghosts:1,ghostPatrol:{w:2,h:2}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:9,w:4,bonuses:0,visibility:{h:2,w:2},timer:30,ghosts:1,ghostPatrol:{w:2,h:2}, mazeAlgorithm: 'sidewinder'},
+                {h:9,w:5,bonuses:0,visibility:{h:2,w:2},timer:30,ghosts:1,ghostPatrol:{w:2,h:2}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:10,w:5,bonuses:2,visibility:{h:3,w:3},timer:30,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:10,w:6,bonuses:2,visibility:{h:3,w:3},timer:30,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:11,w:6,bonuses:3,visibility:{h:3,w:3},timer:60,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:11,w:7,bonuses:3,visibility:{h:3,w:3},timer:60,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:12,w:7,bonuses:3,visibility:{h:3,w:3},timer:60,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:12,w:8,bonuses:4,visibility:{h:3,w:3},timer:60,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:13,w:8,bonuses:4,visibility:{h:3,w:3},timer:60,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:13,w:9,bonuses:4,visibility:{h:3,w:3},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:14,w:9,bonuses:5,visibility:{h:4,w:4},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:14,w:10,bonuses:5,visibility:{h:4,w:4},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:15,w:10,bonuses:5,visibility:{h:4,w:4},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:15,w:11,bonuses:5,visibility:{h:4,w:4},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:16,w:11,bonuses:6,visibility:{h:4,w:4},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:16,w:12,bonuses:6,visibility:{h:4,w:4},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:17,w:12,bonuses:6,visibility:{h:4,w:4},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:17,w:13,bonuses:6,visibility:{h:4,w:4},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:18,w:13,bonuses:6,visibility:{h:4,w:4},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:18,w:14,bonuses:7,visibility:{h:5,w:5},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:19,w:14,bonuses:7,visibility:{h:5,w:5},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:19,w:15,bonuses:7,visibility:{h:5,w:5},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:20,w:15,bonuses:7,visibility:{h:5,w:5},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:20,w:16,bonuses:7,visibility:{h:5,w:5},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:21,w:16,bonuses:8,visibility:{h:5,w:5},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:21,w:17,bonuses:8,visibility:{h:5,w:5},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:22,w:17,bonuses:8,visibility:{h:5,w:5},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:22,w:18,bonuses:8,visibility:{h:5,w:5},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:23,w:19,bonuses:9,visibility:{h:6,w:6},timer:99,ghosts:3,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'}
+            ],
+            levels_landscape: [
+                {h:4,w:8,bonuses:0,visibility:{h:2,w:2},timer:30,ghosts:1,ghostPatrol:{w:2,h:2}, mazeAlgorithm: 'recursiveBacktracker'},{h:4,w:9,bonuses:0,visibility:{h:2,w:2},timer:30,ghosts:1,ghostPatrol:{w:2,h:2}, mazeAlgorithm: 'sidewinder'},{h:5,w:9,bonuses:0,visibility:{h:2,w:2},timer:30,ghosts:1,ghostPatrol:{w:2,h:2}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:5,w:10,bonuses:2,visibility:{h:3,w:3},timer:30,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},{h:6,w:10,bonuses:2,visibility:{h:3,w:3},timer:30,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},{h:6,w:11,bonuses:3,visibility:{h:3,w:3},timer:60,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:7,w:11,bonuses:3,visibility:{h:3,w:3},timer:60,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},{h:7,w:12,bonuses:3,visibility:{h:4,w:4},timer:60,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},{h:8,w:12,bonuses:4,visibility:{h:4,w:4},timer:60,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:8,w:13,bonuses:4,visibility:{h:4,w:4},timer:60,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},{h:9,w:13,bonuses:4,visibility:{h:4,w:4},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},{h:9,w:14,bonuses:5,visibility:{h:5,w:5},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:10,w:14,bonuses:5,visibility:{h:5,w:5},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},{h:10,w:15,bonuses:5,visibility:{h:5,w:5},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},{h:11,w:15,bonuses:5,visibility:{h:5,w:5},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:11,w:16,bonuses:6,visibility:{h:6,w:6},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},{h:12,w:16,bonuses:6,visibility:{h:6,w:6},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},{h:12,w:17,bonuses:6,visibility:{h:6,w:6},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:13,w:17,bonuses:6,visibility:{h:6,w:6},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},{h:13,w:18,bonuses:7,visibility:{h:7,w:7},timer:90,ghosts:1,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},{h:14,w:18,bonuses:8,visibility:{h:6,w:6},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:14,w:19,bonuses:8,visibility:{h:6,w:6},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},{h:15,w:19,bonuses:8,visibility:{h:6,w:6},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},{h:15,w:20,bonuses:8,visibility:{h:6,w:6},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},
+                {h:16,w:20,bonuses:7,visibility:{h:7,w:7},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},{h:16,w:21,bonuses:8,visibility:{h:6,w:7},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},{h:17,w:21,bonuses:8,visibility:{h:6,w:7},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},
+                {h:17,w:22,bonuses:8,visibility:{h:6,w:7},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'},{h:18,w:22,bonuses:8,visibility:{h:6,w:7},timer:99,ghosts:2,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'recursiveBacktracker'},{h:19,w:23,bonuses:9,visibility:{h:7,w:7},timer:99,ghosts:3,ghostPatrol:{w:3,h:3}, mazeAlgorithm: 'sidewinder'}
+            ],
+            levels_minotaur_portrait: [
+                {w: 9, h: 13, visibility: {w: 4, h: 4}, timer: 60, minotaurs: 1, bonuses: 2, mazeAlgorithm: 'prim'},
+                {w: 11, h: 15, visibility: {w: 4, h: 4}, timer: 75, minotaurs: 1, bonuses: 3, mazeAlgorithm: 'prim'},
+                {w: 13, h: 17, visibility: {w: 3, h: 3}, timer: 90, minotaurs: 2, bonuses: 4, mazeAlgorithm: 'prim'},
+                {w: 15, h: 19, visibility: {w: 3, h: 3}, timer: 99, minotaurs: 2, bonuses: 5, mazeAlgorithm: 'prim'},
+                {w: 17, h: 23, visibility: {w: 2, h: 2}, timer: 99, minotaurs: 3, bonuses: 6, mazeAlgorithm: 'prim'}
+            ],
+            levels_minotaur_landscape: [
+                {w: 13, h: 9, visibility: {w: 4, h: 4}, timer: 60, minotaurs: 1, bonuses: 2, mazeAlgorithm: 'prim'},
+                {w: 15, h: 11, visibility: {w: 4, h: 4}, timer: 75, minotaurs: 1, bonuses: 3, mazeAlgorithm: 'prim'},
+                {w: 17, h: 13, visibility: {w: 3, h: 3}, timer: 90, minotaurs: 2, bonuses: 4, mazeAlgorithm: 'prim'},
+                {w: 19, h: 15, visibility: {w: 3, h: 3}, timer: 99, minotaurs: 2, bonuses: 5, mazeAlgorithm: 'prim'},
+                {w: 23, h: 17, visibility: {w: 9, h: 9}, timer: 99, minotaurs: 1, bonuses: 6, mazeAlgorithm: 'prim'}
+            ],
+            themes: {
+                dog:{name:'Dog',player:'🐕',finish:'🏠',walls:['🏡','🌳','💧','🌿'],decor:['🐾'],gradient:['#FADDAA','#EDC967']},
+                forest:{name:'Forest',player:'🐿️',finish:'🌰',walls:['🌲','🌳','🍄','🍁'],decor:['🌱'],gradient:['#D9EAD3','#B6D7A8']},
+                jungle:{name:'Jungle',player:'🐒',finish:'🍌',walls:['?','','🌴','🌸'],decor:['🌺','🦋'],gradient:['#D4F0C4','#A0D8A0']},
+                antarctica:{name:'Antarctica',player:'🐧',finish:'❤️',walls:['❄️','🧊'],decor:['🧊','❄️'],gradient:['#E6F3FB','#B0C4DE']},
+                catsAndMice:{name:'Cats & Mice',player:'🐈',finish:'🐀',walls:['🌲','🏠','🌿','🐾'],decor:['🧶','🧀'],gradient:['#FFFACD','#F5DEB3']},
+                snail:{name:'Snail',player:'🐌',finish:'🥬',walls:['🌲','🌸','🍄','💧'],decor:['🐞','🌼'],gradient:['#DFF0D8','#BDECB6']},
+                football:{name:'Football',player:'⚽',finish:'🥅',walls:['📣','🏆','👟'],decor:['🏟️','🏅'],gradient:['#D9EAD3','#B6D7A8']},
+                sea:{name:'Sea',player:'🐬',finish:'⭐',walls:['🌊','⛵','🏝️','🏖️'],decor:['🐠','🦀','🐚'],gradient:['#B2EBF2','#81D4FA']},
+                desert:{name:'Desert',player:'🐪',finish:'🌴',walls:['🌵','🏜️','⛰️'],decor:['🌵'],gradient:['#FADDAA','#EDC967']},
+                new_year:{name:'New Year',player:'🎁',finish:'🎄',walls:['❄️','⛄','🎅','🦌'],decor:['🌟','🔔'],gradient:['#A9B4C2','#E0F2F1']}
+            },
+            audio: {menu:'/assets/audio/light.ogg',game:['/assets/audio/kinderszenen.ogg','/assets/audio/mirlitons.ogg','/assets/audio/dogsandcats.ogg','/assets/audio/theskaterswaltz.ogg','/assets/audio/walkinganddancing.ogg'],victorySfx:['/assets/audio/sfx-piano-bar2.ogg','/assets/audio/sfx-sfx-strings7.ogg'],collectSfx:'/assets/audio/sfx-magic15.ogg',defeatSfx:'/assets/audio/sfx-pop2.ogg',timerWarningSfx:'/assets/audio/sfx-clock.ogg',timerDefeatSfx:'/assets/audio/sfx-cartoons19.ogg'},
+            languageNames:{ru:'Русский',en:'English'},
+            languages: {
+                ru:{settings:'Настройки',themes:'Темы',random_theme:'Случайная тема',classic:'Классический',flashlight:'Фонарик',ghost:'Привидение',timer:'Таймер',minotaur: 'Минотавр', all_in_one:'Всё в одном',random_mode:'Случайный',menu:'Меню',retry:'Повторить',next_level:'Следующий',confirm_exit_title:'Выйти?',confirm_exit_text:'Прогресс уровня не будет сохранен.',select_mode:'Выберите режим',reset_progress:'Сбросить прогресс',confirm_reset_title:'Сбросить прогресс?',confirm_reset_text:'Все ваши звезды будут удалены. Это действие необратимо.',jungle:'Джунгли',antarctica:'Антарктика',catsAndMice:'Кошки-мышки',snail:'Улитка',football:'Футбол',sea:'Море',desert:'Пустыня',dog:'Собака',forest:'Лес',new_year: 'Новый год',color_theme:'Тема оформления',about_title:'О разработчике',about_text:'Emoji Maze - это увлекательная игра-головоломка, созданная для того, чтобы бросить вызов вашему пространственному мышлению и времени реакции. Игра разработана с использованием HTML5 Canvas, что обеспечивает плавную и отзывчивую графику как на настольных, так и на мобильных устройствах, а также на Android TV. Основное внимание уделяется простому и интуитивно понятному управлению, а также адаптивному дизайну. Цель игры - провести вашего персонажа-эмодзи через лабиринт, избегая привидений и собирая бонусы, чтобы достичь финиша. Наслаждайтесь игрой!', unlock_mode_message: 'Поздравляем! Вам теперь доступен новый режим игры: ', unlock_theme_message: 'Поздравляем! Вам теперь доступна новая тема: '},
+                en:{settings:'Settings',themes:'Themes',random_theme:'Random Theme',classic:'Classic',flashlight:'Flashlight',ghost:'Ghost',timer:'Timer',minotaur: 'Minotaur', all_in_one:'All in One',random_mode:'Random',menu:'Menu',retry:'Retry',next_level:'Next Level',confirm_exit_title:'Exit?',confirm_exit_text:'Level progress will be lost.',select_mode:'Select Mode',reset_progress:'Reset Progress',confirm_reset_title:'Reset progress?',confirm_reset_text:'All your stars will be deleted. This action is irreversible.',jungle:'Jungle',antarctica:'Antarctica',catsAndMice:'Cats & Mice',snail:'Snail',football:'Football',sea:'Sea',desert:'Desert',dog:'Dog',forest:'Forest',new_year: 'New Year',color_theme:'Color Theme',about_title:'About Developer',about_text:'Emoji Maze is an engaging puzzle game designed to challenge your spatial reasoning and reaction time. The game is developed using HTML5 Canvas, ensuring smooth and responsive graphics across desktop, mobile, and Android TV devices. The focus is on simple, intuitive controls and adaptive design. Your goal is to guide your emoji character through the maze, avoiding ghosts and collecting bonuses to reach the finish line. Enjoy the game!', unlock_mode_message: 'Congratulations! You have unlocked a new game mode: ', unlock_theme_message: 'Congratulations! You have unlocked a new theme: '}
+            }
+        };
+        const state={currentScreen:'loading-screen',settings:{dpad:!1,sound:!0,language:'ru',colorTheme:'dark'},progress:{classic:{},flashlight:{},ghost:{},timer:{},minotaur:{},"all-in-one":{}},unlocked:{modes:['classic','random'],themes:['jungle','antarctica','snail']},lastUnlockMessage:'',cheatSequence:[],theme:'random',gameMode:'classic',currentLevel:0,dpadNavActive:!1,mazeWidth:4,mazeHeight:4,isGameActive:!1,isAnimating:!1,isMoving:!1,playerMoveDirection:null,isIntroAnimationActive:!1,playerIsDefeated:!1,isTimerDefeat:!1,defeatAnimation:{progress:0,bubbles:[]},gameTimer:{id:null,timeLeft:0,isPaused:!1},currentNavIndex:0,navigableItems:[],modalNavIndex:0,playerPos:{x:0,y:0},startPos:{x:0,y:0},finishPos:{x:0,y:0},ghosts:[],startGhosts:[],minotaurs:[],startMinotaurs:[],hint:{nextStep:null,visible:!1,timer:null},totalDecor:0,collectedDecor:0,wallColor:'#4B5563'};
+        const audioManager={currentTrack:null,warningSfx:null,musicWasPlaying:!1,play(e,t=!1){if(!state.settings.sound)return;const a=e.split("/").pop();if(this.currentTrack&&this.currentTrack.src.endsWith(a)){this.currentTrack.paused&&this.currentTrack.play().catch(e=>{});return}this.stop(),this.currentTrack=new Audio(e),this.currentTrack.loop=t;const o=this.currentTrack.play();void 0!==o&&o.catch(()=>{const e=()=>{state.settings.sound&&this.currentTrack?.play().catch(e=>{}),window.removeEventListener("click",e),window.removeEventListener("keydown",e)};window.addEventListener("click",e,{once:!0}),window.addEventListener("keydown",e,{once:!0})})},stop(){this.currentTrack&&(this.currentTrack.pause(),this.currentTrack.onended=null,this.currentTrack.src="",this.currentTrack=null)},playSfx(e){if(!state.settings.sound)return;new Audio(e).play().catch(e=>{})},playWarningSfx(e,t=!0){state.settings.sound&&(this.stopWarningSfx(),this.warningSfx=new Audio(e),this.warningSfx.loop=t,this.warningSfx.play().catch(e=>{}))},stopWarningSfx(){this.warningSfx&&(this.warningSfx.pause(),this.warningSfx.src="",this.warningSfx=null)},playGameMusic(){if(state.gameMode==="minotaur"){this.play("https://lkalyadin.github.io/emojie_maze/assets/audio/aquarium.mp3",!0);return}this.stop();let e=[...config.audio.game];const t=()=>{if(!state.settings.sound||"game-screen"!==state.currentScreen)return;0===e.length&&(e=[...config.audio.game]);const a=e.splice(Math.floor(Math.random()*e.length),1)[0];this.play(a,!1),this.currentTrack&&(this.currentTrack.onended=t)};t()}};
+        const dom = {
+            loading: document.getElementById('loading-screen'),
+            mainMenu: document.getElementById('main-menu-screen'),
+            victoryModal: document.getElementById('victory-modal'),
+            minotaurVictoryModal: document.getElementById('minotaur-victory-modal'),
+            confirmExitModal: document.getElementById('confirm-exit-modal'),
+            confirmResetModal: document.getElementById('confirm-reset-modal'),
+            tvBackModal: document.getElementById('tv-back-modal'),
+            aboutModal: document.getElementById('about-modal'),
+            mazeCanvas: document.getElementById('maze-canvas'),
+            totalStars: document.getElementById('total-stars-counter'),
+            timerDisplay: document.getElementById('timer-display')
+        };
+        const mazeCtx = dom.mazeCanvas.getContext('2d');
+        const loadedBackgroundImages = [];
+        let mazeGrid, initialMazeGrid, currentTheme, cellSize, currentBgImage, animationFrameId, playerMoveInterval = null, ghostMoveIntervals = [], minotaurMoveIntervals = [], isStoppingGame = !1;
+        let displayPos = {x:0,y:0}, targetPos = {x:0,y:0};
+        const ANIMATION_SPEED = 0.4;
+        function getActiveLevelsConfig(){
+            const orientation = window.innerWidth > window.innerHeight ? 'landscape' : 'portrait';
+            if (state.gameMode === 'minotaur') {
+                return orientation === 'landscape' ? config.levels_minotaur_landscape : config.levels_minotaur_portrait;
+            }
+            return orientation === 'landscape' ? config.levels_landscape : config.levels_portrait;
+        }
+        function saveSettings(){try{localStorage.setItem('emojiMazeSettings',JSON.stringify(state.settings))}catch(e){console.error("Failed to save settings:",e)}}
+        function loadSettings(){try{const e=localStorage.getItem('emojiMazeSettings');e&&(state.settings={...state.settings,...JSON.parse(e)})}catch(e){console.error("Failed to load settings:",e)}}
+        function saveGameData(){try{const dataToSave={progress:state.progress,unlocked:state.unlocked};localStorage.setItem('emojiMazeGameData',JSON.stringify(dataToSave))}catch(e){console.error("Failed to save game data:",e)}}
+        function loadGameData(){try{const e=localStorage.getItem('emojiMazeGameData');if(e){const t=JSON.parse(e);state.progress={classic:{},flashlight:{},ghost:{},timer:{},minotaur:{},"all-in-one":{},...t.progress};if(t.unlocked){state.unlocked={modes:[...new Set(['classic','random',...t.unlocked.modes])],themes:[...new Set(['jungle','antarctica','snail',...t.unlocked.themes])]}}}else{state.unlocked={modes:['classic','random'],themes:['jungle','antarctica','snail']}}}catch(e){console.error("Failed to load game data:",e)}}
+        function getTotalStars() { return Object.values(state.progress).flatMap(mode => Object.values(mode)).reduce((sum, stars) => sum + stars, 0); }
+        function updateTotalStarsCounter(){const totalStars=getTotalStars(),t=`⭐ ${totalStars}`;document.querySelector("#total-stars-counter .stars-display").innerHTML=t,document.querySelectorAll(".stars-clone").forEach(e=>e.innerHTML=t);updateUnlockProgressBar(totalStars, document.getElementById('main-menu-progress-bar'))}
+        function resetProgress(){state.progress={classic:{},flashlight:{},ghost:{},timer:{},minotaur:{},"all-in-one":{}};state.unlocked={modes:['classic','random'],themes:['jungle','antarctica','snail']};saveGameData(),updateTotalStarsCounter(),updateModeCompletionPercentage(),updateGameModeScreen(),updateThemesScreen(),"level-selection-screen"===state.currentScreen&&showLevelSelectionScreen(state.gameMode)}
+        function stopPlayerMove(){playerMoveInterval&&(clearInterval(playerMoveInterval),playerMoveInterval=null),state.isMoving=!1,state.playerMoveDirection=null,state.playerIsDefeated||!state.isGameActive||checkWin()}
+        function stopGhostAI(){ghostMoveIntervals.forEach(e=>clearInterval(e)),ghostMoveIntervals=[],state.ghosts.forEach(e=>{e.moveTimeout&&clearTimeout(e.moveTimeout)})}
+        function stopMinotaurAI() {minotaurMoveIntervals.forEach(e => clearInterval(e)); minotaurMoveIntervals = []; state.minotaurs.forEach(m => { if (m.moveTimeout) clearTimeout(m.moveTimeout); });}
+        function stopGame(){isStoppingGame||(isStoppingGame=!0,stopGameLoop(),stopPlayerMove(),stopGhostAI(),stopMinotaurAI(),clearInterval(state.gameTimer.id),state.gameTimer.id=null,state.gameTimer.isPaused=!1,audioManager.stopWarningSfx(),dom.timerDisplay.style.display="none",isStoppingGame=!1)}
+        function switchScreen(e){stopGame();const t=document.getElementById(state.currentScreen);"game-screen"===state.currentScreen&&t&&t.querySelectorAll("#return-menu-button, #restart-game-button, #hint-button").forEach(e=>{e.removeAttribute("tabindex")}),t&&t.classList.remove("active");const a=document.getElementById(e);a&&(a.classList.add("active"),"game-screen"===e&&a.querySelectorAll("#return-menu-button, #restart-game-button, #hint-button").forEach(e=>{e.setAttribute("tabindex","-1")})),state.currentScreen=e,state.dpadNavActive=!1,state.isIntroAnimationActive=!1,dom.totalStars.style.display="main-menu-screen"===e?"flex":"none";if("main-menu-screen"===e){updateTotalStarsCounter()}document.getElementById('main-menu-progress-bar').style.display = "main-menu-screen" === e ? "block" : "none";if(e==='settings-screen'){state.cheatSequence=[]}updateEmojiBackground(),"game-mode-screen"===e&&updateModeCompletionPercentage(),document.getElementById("game-screen").classList.toggle("dpad-on",state.settings.dpad),setupNavigation();"game-screen"===e?audioManager.playGameMusic():audioManager.play(config.audio.menu,!0)}
+        function goToMainMenu(){switchScreen("main-menu-screen")}
+        function setupNavigation(){const e=document.getElementById(state.currentScreen);if(!e)return state.navigableItems=[],void(state.currentNavIndex=0);const t=Array.from(e.querySelectorAll(".nav-item:not(.locked), .back-button"));state.navigableItems=t.filter(e=>!e.classList.contains("disabled")).sort((e,t)=>{const a=parseInt(e.dataset.navIndex||"999"),o=parseInt(t.dataset.navIndex||"999");return a-o}),state.navigableItems.length>0?state.currentNavIndex=state.navigableItems.some(e=>0===parseInt(e.dataset.navIndex))&&state.navigableItems.length>1?1:0:state.currentNavIndex=0,updateNavSelection()}
+        function ensureSelectedItemIsVisible(){if(!state.navigableItems.length)return;const e=state.navigableItems[state.currentNavIndex];if(e){const t={behavior:"smooth",block:"nearest",inline:"nearest"};"level-selection-screen"===state.currentScreen&&(t.block="center"),e.scrollIntoView(t)}}
+        function updateNavSelection(){state.navigableItems.forEach((e,t)=>{const a=t===state.currentNavIndex&&state.dpadNavActive;e.classList.toggle("selected",a)}),state.dpadNavActive&&ensureSelectedItemIsVisible()}
+        function handleModalNav(e,t){if(!state.dpadNavActive)return state.dpadNavActive=!0,state.modalNavIndex=0,updateModalNavSelection(t),void e.preventDefault();const a=Array.from(t.querySelectorAll(".modal-button"));if(!a.length)return;let o=!1;"ArrowRight"===e.key?(state.modalNavIndex=(state.modalNavIndex+1)%a.length,o=!0):"ArrowLeft"===e.key?(state.modalNavIndex=(state.modalNavIndex-1+a.length)%a.length,o=!0):"Enter"===e.key&&(a[state.modalNavIndex].click(),o=!0),o&&(updateModalNavSelection(t),e.preventDefault())}
+        function updateModalNavSelection(e){const t=Array.from(e.querySelectorAll(".modal-button"));t.forEach((e,a)=>{e.classList.toggle("selected",a===state.modalNavIndex)})}
+        function hideHint(){state.hint.visible=!1,state.hint.timer&&(clearTimeout(state.hint.timer),state.hint.timer=null),state.hint.nextStep=null}
+        function handleGameScreenKeyDown(e){const t=["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter"],a=document.querySelector(".modal-overlay.visible");if(a)return void handleModalNav(e,a);if(state.hint.visible&&t.includes(e.key)){if(e.preventDefault(),hideHint(),["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].includes(e.key))handleGameInput(e.key);return}if(state.playerIsDefeated)return;["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","w","a","s","d"].includes(e.key)?(e.preventDefault(),handleGameInput(e.key)):"Enter"===e.key&&(e.preventDefault(),showModal(dom.tvBackModal),state.isGameActive=!1)}
+        function handleGlobalKeyDown(e){const t=document.querySelector(".modal-overlay.visible"),a=["ArrowUp","ArrowDown","ArrowLeft","ArrowRight","Enter"];if(t)return void handleModalNav(e,t);if("loading-screen"===state.currentScreen)return goToMainMenu(),void e.preventDefault();if("game-screen"===state.currentScreen)return void handleGameScreenKeyDown(e);if(!state.dpadNavActive&&a.includes(e.key)){if(state.dpadNavActive=!0,state.navigableItems.length>0){const e=state.navigableItems.some(e=>0===parseInt(e.dataset.navIndex));state.currentNavIndex=e&&state.navigableItems.length>1?1:0}updateNavSelection()}if(state.isMoving||state.playerIsDefeated||!state.navigableItems.length)return;let o=!1;const n="level-selection-screen"===state.currentScreen,s="main-menu-screen"===state.currentScreen,i=["game-mode-screen","settings-screen","themes-screen"].includes(state.currentScreen);let l=0;if(n){const e=document.getElementById("level-selection-grid");e&&(l=getComputedStyle(e).gridTemplateColumns.split(" ").length)}const r=state.currentNavIndex,d=state.navigableItems;switch(e.key){case"ArrowUp":n&&r>0?state.currentNavIndex=(r-l>=1?r-l:0):i&&r>0?state.currentNavIndex=Math.max(0,r-1):s&&r>0?state.currentNavIndex=0:state.currentNavIndex=Math.max(0,r-1),o=!0;break;case"ArrowDown":n&&r>0?r+l<d.length&&(state.currentNavIndex=r+l):n&&0===r&&d.length>1?state.currentNavIndex=1:i&&r<d.length-1?state.currentNavIndex++:s&&0===r&&d.length>1?state.currentNavIndex=1:r<d.length-1&&state.currentNavIndex++,o=!0;break;case"ArrowLeft":n&&r>0?((r-1)%l==0||1===l?state.currentNavIndex=0:state.currentNavIndex--):i&&r>0?state.currentNavIndex=0:s&&(4===r?state.currentNavIndex=3:r>0&&(state.currentNavIndex=Math.max(1,r-1))),o=!0;break;case"ArrowRight":n&&0===r&&d.length>1?state.currentNavIndex=1:n&&r>0?r%l==0&&l>1||r===d.length-1||r>=d.length-1||state.currentNavIndex++:i&&0===r&&d.length>1?state.currentNavIndex=1:s&&(3===r?state.currentNavIndex=4:r<3&&(state.currentNavIndex=Math.min(3,r+1))),o=!0;break;case"Enter":d[r]&&(d[r].click(),o=!0);break;case"Escape":const t=document.querySelector(`#${state.currentScreen} .back-button`);t&&(t.click(),o=!0)}o&&(e.preventDefault(),updateNavSelection())}
+        function updateEmojiBackground(){const e=document.querySelector(`#${state.currentScreen} .background-emojis`);if(!e)return;let t=[];Object.values(config.themes).forEach(e=>{Array.isArray(e.walls)&&t.push(...e.walls.filter(e=>e&&""!==e.trim()))}),Object.values(config.themes).forEach(e=>{Array.isArray(e.decor)&&t.push(...e.decor.filter(e=>e&&""!==e.trim()))}),e.innerHTML="";for(let a=0;a<60;a++){const o=document.createElement("span");o.textContent=t.length>0?t[Math.floor(Math.random()*t.length)]:"✨",o.style.left=`${100*Math.random()}vw`,o.style.top=`${100*Math.random()}vh`,a<20?o.style.opacity="0.1":(o.classList.add("animated"),o.style.animationDelay=`${12*Math.random()}s`),e.appendChild(o)}}
+        function generateRecursiveBacktrackerMaze(grid,startPos){let stack=[grid[startPos.y][startPos.x]];grid[startPos.y][startPos.x].visited=!0;while(stack.length>0){let current=stack.pop();let{x,y}=current;let neighbors=[];y>0&&!grid[y-1][x].visited&&neighbors.push(grid[y-1][x]);x<grid[0].length-1&&!grid[y][x+1].visited&&neighbors.push(grid[y][x+1]);y<grid.length-1&&!grid[y+1][x].visited&&neighbors.push(grid[y+1][x]);x>0&&!grid[y][x-1].visited&&neighbors.push(grid[y][x-1]);if(neighbors.length>0){stack.push(current);let next=neighbors[Math.floor(Math.random()*neighbors.length)];next.y<current.y?(current.walls.top=!1,next.walls.bottom=!1):next.x>current.x?(current.walls.right=!1,next.walls.left=!1):next.y>current.y?(current.walls.bottom=!1,next.walls.top=!1):next.x<current.x&&(current.walls.left=!1,next.walls.right=!1);next.visited=!0;stack.push(next)}}return grid}
+        function generateSidewinderMaze(grid){for(let y=0;y<grid.length;y++){let runStart=0;for(let x=0;x<grid[0].length;x++){const shouldCloseRun=x+1===grid[0].length||y>0&&Math.random()<.5;if(shouldCloseRun){if(y>0){const carveX=runStart+Math.floor(Math.random()*(x-runStart+1));grid[y][carveX].walls.top=!1,grid[y-1][carveX].walls.bottom=!1}runStart=x+1}else grid[y][x].walls.right=!1,grid[y][x+1].walls.left=!1}}return grid}
+        function generatePrimMaze(grid){const frontiers=[];const startX=Math.floor(Math.random()*grid[0].length),startY=Math.floor(Math.random()*grid.length);grid[startY][startX].visited=!0;const addFrontiers=(x,y)=>{y>0&&!grid[y-1][x].visited&&frontiers.push({x:x,y:y-1,from:{x:x,y:y}}),y<grid.length-1&&!grid[y+1][x].visited&&frontiers.push({x:x,y:y+1,from:{x:x,y:y}}),x>0&&!grid[y][x-1].visited&&frontiers.push({x:x-1,y:y,from:{x:x,y:y}}),x<grid[0].length-1&&!grid[y][x+1].visited&&frontiers.push({x:x+1,y:y,from:{x:x,y:y}})};addFrontiers(startX,startY);while(frontiers.length>0){const randIndex=Math.floor(Math.random()*frontiers.length),{x,y,from}=frontiers.splice(randIndex,1)[0];if(grid[y][x].visited)continue;grid[y][x].visited=!0,x===from.x?y<from.y?(grid[from.y][from.x].walls.top=!1,grid[y][x].walls.bottom=!1):(grid[from.y][from.x].walls.bottom=!1,grid[y][x].walls.top=!1):x<from.x?(grid[from.y][from.x].walls.left=!1,grid[y][x].walls.right=!1):(grid[from.y][from.x].walls.right=!1,grid[y][x].walls.left=!1);addFrontiers(x,y)}return grid.forEach(row=>row.forEach(cell=>cell.visited=!1)),grid}
+        function generateMaze(width,height,startPos,algorithm='recursiveBacktracker'){let grid=Array.from({length:height},(_,y)=>Array.from({length:width},(_,x)=>({x,y,walls:{top:!0,right:!0,bottom:!0,left:!0},visited:!1,decor:null})));switch(algorithm){case'sidewinder':return generateSidewinderMaze(grid);case'prim':return generatePrimMaze(grid);case'recursiveBacktracker':default:return generateRecursiveBacktrackerMaze(grid,startPos)}}
+        function findLongestPath(e,t){const a=[[t,0]],o=new Set([`${t.x},${t.y}`]);let n=0,s=t;for(;a.length>0;){const[t,i]=a.shift();if(i>n&&(n=i,s=t),!e[t.y][t.x].walls.top&&e[t.y-1]?.[t.x]){const n=`${t.x},${t.y-1}`;o.has(n)||(o.add(n),a.push([e[t.y-1][t.x],i+1]))}if(!e[t.y][t.x].walls.right&&e[t.y]?.[t.x+1]){const n=`${t.x+1},${t.y}`;o.has(n)||(o.add(n),a.push([e[t.y][t.x+1],i+1]))}if(!e[t.y][t.x].walls.bottom&&e[t.y+1]?.[t.x]){const n=`${t.x},${t.y+1}`;o.has(n)||(o.add(n),a.push([e[t.y+1][t.x],i+1]))}if(!e[t.y][t.x].walls.left&&e[t.y]?.[t.x-1]){const n=`${t.x-1},${t.y}`;o.has(n)||(o.add(n),a.push([e[t.y][t.x-1],i+1]))}}return s}
+        function findSolutionPath(e,t,a){const o=[[t]],n=new Set([`${t.x},${t.y}`]);for(;o.length>0;){const t=o.shift(),s=t[t.length-1];if(s.x===a.x&&s.y===a.y)return t;const i=[],l=e[s.y][s.x];!l.walls.top&&e[s.y-1]?.[s.x]&&i.push(e[s.y-1][s.x]),!l.walls.right&&e[s.y]?.[s.x+1]&&i.push(e[s.y][s.x+1]),!l.walls.bottom&&e[s.y+1]?.[s.x]&&i.push(e[s.y+1][s.x]),!l.walls.left&&e[s.y]?.[s.x-1]&&i.push(e[s.y][s.x-1]);for(const e of i){const a=`${e.x},${e.y}`;n.has(a)||(n.add(a),o.push([...t,e]))}}return[]}
+        function addDecorations(e,t,a,o){if(!currentTheme.decor||0===currentTheme.decor.length||!o)return void(state.totalDecor=0);const n=new Set([`${t.x},${t.y}`,`${a.x},${a.y}`]),s=[];for(let t=0;t<e.length;t++)for(let a=0;a<e[0].length;a++){n.has(`${a},${t}`)||s.push(e[t][a])}state.totalDecor=Math.min(o,s.length);for(let e=0;e<state.totalDecor;e++){if(0===s.length)break;const t=s.splice(Math.floor(Math.random()*s.length),1)[0];t&&(t.decor=currentTheme.decor[Math.floor(Math.random()*currentTheme.decor.length)])}}
+        function drawTriangle(e,t,a,o,n,s,i=!1){e.save(),e.translate(t,a),e.rotate(n),e.beginPath(),e.moveTo(0,-o/1.5),e.lineTo(o/2,o/3),e.lineTo(-o/2,o/3),e.closePath(),i?(e.fillStyle=s,e.fill()):(e.strokeStyle=s,e.lineWidth=2,e.stroke()),e.restore()}
+        function drawCircleOutline(e,t,a,o,n,s=2){e.save(),e.beginPath(),e.arc(t,a,o,0,2*Math.PI),e.strokeStyle=n,e.lineWidth=s,e.stroke(),e.restore()}
+        function drawMoveIndicators(){if(state.isMoving)return;const{x:e,y:t}=state.playerPos,a=mazeGrid[t][e],o=.2*cellSize,n=Date.now(),s=Math.sin(.006*n)*(.05*cellSize);a.walls.top||drawTriangle(mazeCtx,e*cellSize+cellSize/2,(t-1)*cellSize+cellSize/2+s,o,0,"#696969"),a.walls.bottom||drawTriangle(mazeCtx,e*cellSize+cellSize/2,(t+1)*cellSize+cellSize/2-s,o,Math.PI,"#696969"),a.walls.left||drawTriangle(mazeCtx,(e-1)*cellSize+cellSize/2+s,t*cellSize+cellSize/2,o,-Math.PI/2,"#696969"),a.walls.right||drawTriangle(mazeCtx,(e+1)*cellSize+cellSize/2-s,t*cellSize+cellSize/2,o,Math.PI/2,"#696969")}
+        function drawWavyLine(e,t,a,o,n){const s=o-t,i=n-a,l=Math.sqrt(s*s+i*i),r=Math.atan2(i,s);e.save(),e.translate(t,a),e.rotate(r),e.beginPath(),e.moveTo(0,0);for(let t=0;t<l;t++)e.lineTo(t,2*Math.sin(t/15*Math.PI));e.stroke(),e.restore()}
+        function drawWalls(){mazeCtx.strokeStyle=state.wallColor,mazeCtx.lineWidth=Math.max(2,Math.min(6,Math.floor(.1*cellSize))),mazeCtx.lineCap="round",mazeCtx.beginPath(),mazeCtx.moveTo(0,0),mazeCtx.lineTo(state.mazeWidth*cellSize,0),mazeCtx.lineTo(state.mazeWidth*cellSize,state.mazeHeight*cellSize),mazeCtx.lineTo(0,state.mazeHeight*cellSize),mazeCtx.closePath(),mazeCtx.stroke();for(let e=0;e<state.mazeHeight;e++)for(let t=0;t<state.mazeWidth;t++){const a=mazeGrid[e][t],o=t*cellSize,n=e*cellSize;a.walls.bottom&&e<state.mazeHeight-1&&drawWavyLine(mazeCtx,o,n+cellSize,o+cellSize,n+cellSize),a.walls.right&&t<state.mazeWidth-1&&drawWavyLine(mazeCtx,o+cellSize,n,o+cellSize,n+cellSize)}}
+        function drawDecor(){mazeCtx.textAlign="center",mazeCtx.textBaseline="middle";for(let e=0;e<state.mazeHeight;e++)for(let t=0;t<state.mazeWidth;t++){const a=mazeGrid[e][t];a.decor&&(mazeCtx.font=`bold ${.6*cellSize}px sans-serif`,mazeCtx.fillText(a.decor,t*cellSize+cellSize/2,e*cellSize+cellSize/2+.05*cellSize))}}
+        function drawHintIndicator(){if(!state.hint.visible||!state.hint.nextStep)return;const e=state.hint.nextStep;let t=0;e.y<state.playerPos.y?t=0:e.y>state.playerPos.y?t=Math.PI:e.x<state.playerPos.x?t=-Math.PI/2:e.x>state.playerPos.x&&(t=Math.PI/2);const a=.3*cellSize,o=e.x*cellSize+cellSize/2,n=e.y*cellSize+cellSize/2,s=1+.1*Math.sin(.01*Date.now());drawTriangle(mazeCtx,o,n,a*s,t,"#53BF9D",!0)}
+        function drawPlayer(){mazeCtx.save();const e=Math.floor(.7*cellSize);mazeCtx.font=`bold ${e}px sans-serif`;let t=0,a=1,o=1;if(state.isAnimating)if("⚽"===currentTheme.player)t=Date.now()/150*Math.PI;else if("🐌"===currentTheme.player)a=1+.1*Math.sin(.015*Date.now()),o=1-.1*Math.sin(.015*Date.now());else t=.2*Math.sin(.02*Date.now());mazeCtx.translate(displayPos.x,displayPos.y),mazeCtx.rotate(t),mazeCtx.scale(a,o),mazeCtx.textAlign="center",mazeCtx.textBaseline="middle",mazeCtx.fillText(currentTheme.player,0,0+.05*cellSize),mazeCtx.restore()}
+        function drawFinish(){mazeCtx.save();const e=Math.floor(.8*cellSize);mazeCtx.font=`bold ${e}px sans-serif`,mazeCtx.translate(state.finishPos.x*cellSize+cellSize/2,state.finishPos.y*cellSize+cellSize/2),mazeCtx.textAlign="center",mazeCtx.textBaseline="middle",mazeCtx.fillText(currentTheme.finish,0,0+.05*cellSize),mazeCtx.restore()}
+        function drawGhosts(){mazeCtx.save();const e=Math.floor(.8*cellSize);mazeCtx.font=`bold ${e}px sans-serif`,mazeCtx.textAlign="center",mazeCtx.textBaseline="middle",state.ghosts.forEach(e=>{e.isIndicating&&e.nextMove&&drawCircleOutline(mazeCtx,e.nextMove.x*cellSize+cellSize/2,e.nextMove.y*cellSize+cellSize/2,.15*cellSize,"red",3);const t=Math.sin(.005*Date.now())*(.1*cellSize);mazeCtx.fillText("👻",e.displayPos.x,e.displayPos.y+t)}),mazeCtx.restore()}
+        function drawMinotaurs(){mazeCtx.save();const e=Math.floor(.8*cellSize);mazeCtx.font=`bold ${e}px sans-serif`;mazeCtx.textAlign="center",mazeCtx.textBaseline="middle",state.minotaurs.forEach(minotaur=>{const t=Math.sin(.005*Date.now())*(.1*cellSize);mazeCtx.fillText("🐂",minotaur.displayPos.x,minotaur.displayPos.y+t)}),mazeCtx.restore()}
+        function drawPlayerDefeatAnimation(){state.defeatAnimation.progress+=.02,state.defeatAnimation.progress>1&&(state.defeatAnimation.progress=1);const e=state.defeatAnimation.bubbles;mazeCtx.save(),mazeCtx.globalAlpha=1-state.defeatAnimation.progress,drawPlayer(),mazeCtx.restore(),mazeCtx.save(),mazeCtx.translate(displayPos.x,displayPos.y);for(const t of e)t.radius+=t.speed,t.opacity=1-t.radius/t.maxRadius,t.opacity<0&&(t.opacity=0),mazeCtx.beginPath(),mazeCtx.arc(t.x,t.y,t.radius,0,2*Math.PI),mazeCtx.fillStyle=`rgba(225, 239, 255, ${t.opacity})`,mazeCtx.fill();mazeCtx.restore(),state.defeatAnimation.progress>=1&&(state.playerIsDefeated=!1,state.isTimerDefeat=!1,restartLevel())}
+        function drawIntroAnimation(){const e=-Math.abs(Math.sin(.005*Date.now())*(.15*cellSize));mazeCtx.save(),mazeCtx.translate(displayPos.x,displayPos.y+e),mazeCtx.textAlign="center",mazeCtx.textBaseline="middle",mazeCtx.font=`bold ${Math.floor(.7*cellSize)}px sans-serif`,mazeCtx.fillText(currentTheme.player,0,0+.05*cellSize),mazeCtx.restore(),mazeCtx.save(),mazeCtx.translate(state.finishPos.x*cellSize+cellSize/2,state.finishPos.y*cellSize+cellSize/2+e),mazeCtx.font=`bold ${Math.floor(.8*cellSize)}px sans-serif`,mazeCtx.textAlign="center",mazeCtx.textBaseline="middle",mazeCtx.fillText(currentTheme.finish,0,0+.05*cellSize),mazeCtx.restore()}
+        function gameLoop(){if("game-screen"!==state.currentScreen)return;animationFrameId=requestAnimationFrame(gameLoop),state.playerIsDefeated||(displayPos.x+=(targetPos.x-displayPos.x)*ANIMATION_SPEED,displayPos.y+=(targetPos.y-displayPos.y)*ANIMATION_SPEED,Math.abs(targetPos.x-displayPos.x)<.5&&Math.abs(targetPos.y-displayPos.y)<.5&&(displayPos.x=targetPos.x,displayPos.y=targetPos.y,state.isAnimating&&(state.isAnimating=!1,checkCollision(),state.isMoving||checkWin()))),state.ghosts.forEach(e=>{e.displayPos.x+=(e.targetPos.x-e.displayPos.x)*ANIMATION_SPEED,e.displayPos.y+=(e.targetPos.y-e.displayPos.y)*ANIMATION_SPEED}),state.minotaurs.forEach(e=>{e.displayPos.x+=(e.targetPos.x-e.displayPos.x)*ANIMATION_SPEED,e.displayPos.y+=(e.targetPos.y-e.displayPos.y)*ANIMATION_SPEED}),mazeCtx.clearRect(0,0,dom.mazeCanvas.width,dom.mazeCanvas.height);const gradient=mazeCtx.createLinearGradient(0,0,0,dom.mazeCanvas.height);gradient.addColorStop(0,currentTheme.gradient[0]),gradient.addColorStop(1,currentTheme.gradient[1]),mazeCtx.fillStyle=gradient,mazeCtx.fillRect(0,0,dom.mazeCanvas.width,dom.mazeCanvas.height),currentBgImage&&currentBgImage.complete&&(mazeCtx.save(),mazeCtx.globalAlpha=.35,mazeCtx.drawImage(currentBgImage,0,0,currentBgImage.width,currentBgImage.height,0,0,dom.mazeCanvas.width,dom.mazeCanvas.height),mazeCtx.restore()),drawWalls(),drawDecor(),drawHintIndicator(),state.isIntroAnimationActive?drawIntroAnimation():(drawFinish(),drawGhosts(),drawMinotaurs(),state.playerIsDefeated?drawPlayerDefeatAnimation():(drawPlayer(),state.isMoving||state.hint.visible||drawMoveIndicators()),state.isGameActive&&(["flashlight","all-in-one","minotaur"].includes(state.gameMode))&&(lightRadius=(getActiveLevelsConfig()[state.currentLevel].visibility.w+getActiveLevelsConfig()[state.currentLevel].visibility.h)/2*cellSize,mazeCtx.save(),mazeCtx.fillStyle="black",mazeCtx.beginPath(),mazeCtx.rect(0,0,dom.mazeCanvas.width,dom.mazeCanvas.height),mazeCtx.arc(displayPos.x,displayPos.y,lightRadius,0,2*Math.PI,!0),mazeCtx.fill("evenodd"),mazeCtx.restore()))}
+        function stopGameLoop(){animationFrameId&&(cancelAnimationFrame(animationFrameId),animationFrameId=null)}
+        function updateDecorCounter(){const e=document.getElementById("decor-counter");state.totalDecor>0&&currentTheme.decor.length>0?(e.style.display="flex",e.innerHTML=`${currentTheme.decor[0]||"⭐"}&nbsp;${state.collectedDecor}&nbsp;/&nbsp;${state.totalDecor}`):e.style.display="none"}
+        function handleTimerDefeat(){state.isGameActive=!1,state.isTimerDefeat=!0,state.playerIsDefeated=!0,stopPlayerMove(),stopGhostAI(),stopMinotaurAI(),audioManager.stopWarningSfx(),audioManager.playSfx(config.audio.timerDefeatSfx),state.defeatAnimation.progress=0,state.defeatAnimation.bubbles=[];for(let e=0;e<15;e++)state.defeatAnimation.bubbles.push({x:.5*(Math.random()-.5)*cellSize,y:.5*(Math.random()-.5)*cellSize,radius:5*Math.random(),maxRadius:15*Math.random()+10,speed:.5*Math.random()+.5})}
+        function updateTimerDisplay(){dom.timerDisplay&&(state.gameTimer.timeLeft<=0?dom.timerDisplay.innerHTML='⏰ <span style="color: var(--primary-pink);">00</span>':(dom.timerDisplay.innerHTML=`⏰ ${state.gameTimer.timeLeft.toString().padStart(2,"0")}`,state.gameTimer.timeLeft<=20?dom.timerDisplay.classList.contains("warning")||(dom.timerDisplay.classList.add("warning"),audioManager.playWarningSfx(config.audio.timerWarningSfx)):(dom.timerDisplay.classList.remove("warning"),audioManager.stopWarningSfx())))}
+        function countdown(){state.isGameActive?(state.gameTimer.timeLeft--,updateTimerDisplay(),state.gameTimer.timeLeft<=0&&(clearInterval(state.gameTimer.id),state.gameTimer.id=null,handleTimerDefeat())):(clearInterval(state.gameTimer.id),state.gameTimer.id=null)}
+        function restartLevel(){if(!initialMazeGrid)return;hideModal(dom.victoryModal),hideModal(dom.tvBackModal),stopGame(),mazeGrid=JSON.parse(JSON.stringify(initialMazeGrid)),state.playerPos={...state.startPos},targetPos.x=displayPos.x=state.playerPos.x*cellSize+cellSize/2,targetPos.y=displayPos.y=state.playerPos.y*cellSize+cellSize/2;["ghost","all-in-one"].includes(state.gameMode)&&state.ghosts.forEach((e,t)=>{const a=state.startGhosts[t];e.x=a.x,e.y=a.y,e.displayPos={x:a.x*cellSize+cellSize/2,y:a.y*cellSize+cellSize/2},e.targetPos={...e.displayPos},e.isIndicating=!1,e.nextMove=null,e.pathIndex=0}),"minotaur"===state.gameMode&&state.minotaurs.forEach((e,t)=>{const a=state.startMinotaurs[t];e.x=a.x,e.y=a.y,e.displayPos={x:a.x*cellSize+cellSize/2,y:a.y*cellSize+cellSize/2},e.targetPos={...e.displayPos}}),state.collectedDecor=0,state.playerIsDefeated=!1,state.isTimerDefeat=!1,state.isIntroAnimationActive=!1,state.defeatAnimation={progress:0,bubbles:[]},state.hint={nextStep:null,visible:!1,timer:null},dom.timerDisplay.classList.remove("warning"),updateDecorCounter(),state.isGameActive=!0,["timer","all-in-one","minotaur"].includes(state.gameMode)&&(dom.timerDisplay.style.display="flex",state.gameTimer.timeLeft=getActiveLevelsConfig()[state.currentLevel].timer,updateTimerDisplay(),state.gameTimer.id=setInterval(countdown,1e3)),startGhostAI(),startMinotaurAI(),gameLoop()}
+        function step(){if(!state.isMoving)return void clearInterval(playerMoveInterval);const{x:e,y:t}=state.playerPos,a=mazeGrid[t][e];let o=!1;if("up"===state.playerMoveDirection&&!a.walls.top?o=!0:"down"===state.playerMoveDirection&&!a.walls.bottom?o=!0:"left"===state.playerMoveDirection&&!a.walls.left?o=!0:"right"===state.playerMoveDirection&&!a.walls.right&&(o=!0),!o)return void stopPlayerMove();let n=e,s=t;"up"===state.playerMoveDirection?s--:"down"===state.playerMoveDirection?s++:"left"===state.playerMoveDirection?n--:"right"===state.playerMoveDirection&&n++;state.isAnimating=!0,state.playerPos={x:n,y:s},targetPos.x=n*cellSize+cellSize/2,targetPos.y=s*cellSize+cellSize/2,checkCollision();if(state.playerIsDefeated)return void stopPlayerMove();const i=mazeGrid[s][n];if(i.decor&&(state.collectedDecor++,updateDecorCounter(),audioManager.playSfx(config.audio.collectSfx),i.decor=null),4-Object.values(i.walls).filter(Boolean).length!==2||n===state.finishPos.x&&s===state.finishPos.y)stopPlayerMove()}
+        function initiatePlayerMove(e){if(state.isIntroAnimationActive){beginGameplay();setTimeout(()=>initiatePlayerMove(e),50);return}if(!state.isGameActive||state.playerIsDefeated||state.isAnimating)return;if(state.isMoving)return;const{x:t,y:a}=state.playerPos,o=mazeGrid[a][t];let n=!1;switch(e){case"up":if(!o.walls.top)n=!0;break;case"down":if(!o.walls.bottom)n=!0;break;case"left":if(!o.walls.left)n=!0;break;case"right":if(!o.walls.right)n=!0}if(!n)return;hideHint(),state.isMoving=!0,state.playerMoveDirection=e,step(),state.isMoving&&(playerMoveInterval=setInterval(step,160))}
+        function handleGameInput(e){if(state.isIntroAnimationActive)return beginGameplay(),void setTimeout(()=>handleGameInput(e),0);let t=null;"ArrowUp"===e||"w"===e?t="up":"ArrowDown"===e||"s"===e?t="down":"ArrowLeft"===e||"a"===e?t="left":"ArrowRight"!==e&&"d"!==e||(t="right"),t&&initiatePlayerMove(t)}
+        function startGhostAI(){stopGhostAI();if(!["ghost","all-in-one"].includes(state.gameMode))return;state.ghosts.forEach(e=>{const t=()=>{if(!state.isGameActive||state.isMoving)return void(e.moveTimeout=setTimeout(t,400*Math.random()+800));if(e.isIndicating||!e.path||0===e.path.length)return void(e.moveTimeout=setTimeout(t,400*Math.random()+800));e.pathIndex=(e.pathIndex+1)%e.path.length;e.nextMove=e.path[e.pathIndex];e.isIndicating=!0;e.moveTimeout=setTimeout(()=>{e.nextMove?(e.isIndicating=!1,e.x=e.nextMove.x,e.y=e.nextMove.y,e.targetPos.x=e.x*cellSize+cellSize/2,e.targetPos.y=e.y*cellSize+cellSize/2,e.nextMove=null,checkCollision(),e.moveTimeout=setTimeout(t,400*Math.random()+800)):(e.isIndicating=!1,e.moveTimeout=setTimeout(t,400*Math.random()+800))},500)};e.moveTimeout=setTimeout(t,400*Math.random()+800)})}
+        function startMinotaurAI() {
+            stopMinotaurAI();
+            if (state.gameMode !== 'minotaur') return;
+            state.minotaurs.forEach(minotaur => {
+                const move = () => {
+                    if (!state.isGameActive) {
+                        minotaur.moveTimeout = setTimeout(move, 500 + 500 * Math.random());
+                        return;
+                    }
+
+                    const { x, y } = minotaur;
+                    const possibleMoves = [];
+                    const walls = mazeGrid[y][x].walls;
+
+                    if (!walls.top && y > 0) possibleMoves.push({ x: x, y: y - 1 });
+                    if (!walls.bottom && y < state.mazeHeight - 1) possibleMoves.push({ x: x, y: y + 1 });
+                    if (!walls.left && x > 0) possibleMoves.push({ x: x - 1, y: y });
+                    if (!walls.right && x < state.mazeWidth - 1) possibleMoves.push({ x: x + 1, y: y });
+
+                    if (possibleMoves.length > 0) {
+                        let nextMove;
+                        if (possibleMoves.length === 1) {
+                            nextMove = possibleMoves[0];
+                        } else {
+                            let bestMove = null;
+                            let minDistance = Infinity;
+
+                            for (const move of possibleMoves) {
+                                const distance = Math.abs(move.x - state.playerPos.x) + Math.abs(move.y - state.playerPos.y);
+                                if (distance < minDistance) {
+                                    minDistance = distance;
+                                    bestMove = move;
+                                }
+                            }
+                            
+                            if (Math.random() < 0.75 && bestMove) {
+                                nextMove = bestMove;
+                            } else {
+                                nextMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                            }
+                        }
+
+                        minotaur.x = nextMove.x;
+                        minotaur.y = nextMove.y;
+                        minotaur.targetPos.x = nextMove.x * cellSize + cellSize / 2;
+                        minotaur.targetPos.y = nextMove.y * cellSize + cellSize / 2;
+                        checkCollision();
+                    }
+
+                    minotaur.moveTimeout = setTimeout(move, 500 + 500 * Math.random());
+                };
+                minotaur.moveTimeout = setTimeout(move, 500 + 500 * Math.random());
+            });
+        }
+        function checkCollision(){if(state.playerIsDefeated)return;const enemies=[...state.ghosts,...state.minotaurs];for(const enemy of enemies)if(state.playerPos.x===enemy.x&&state.playerPos.y===enemy.y)return state.isGameActive=!1,state.playerIsDefeated=!0,stopPlayerMove(),stopGhostAI(),stopMinotaurAI(),audioManager.playSfx(config.audio.defeatSfx),state.defeatAnimation.progress=0,state.defeatAnimation.bubbles=[],!0;return!1}
+        function resizeCanvas(){if("game-screen"!==state.currentScreen)return;const e=document.getElementById("maze-wrapper");if(!e)return;const t=getActiveLevelsConfig();state.currentLevel>=t.length&&(state.currentLevel=t.length-1);const a=t[state.currentLevel];state.mazeWidth=a.w,state.mazeHeight=a.h;const o=state.mazeWidth/state.mazeHeight,n=e.clientWidth/e.clientHeight;let s,i;n>o?(i=e.clientHeight,s=i*o):(s=e.clientWidth,i=s/o);const l=window.devicePixelRatio||1;dom.mazeCanvas.style.width=`${s}px`,dom.mazeCanvas.style.height=`${i}px`,dom.mazeCanvas.width=Math.floor(s*l),dom.mazeCanvas.height=Math.floor(i*l),mazeCtx.scale(l,l),cellSize=Math.floor(Math.min(s/state.mazeWidth,i/state.mazeHeight)),targetPos.x=displayPos.x=state.playerPos.x*cellSize+cellSize/2,targetPos.y=displayPos.y=state.playerPos.y*cellSize+cellSize/2,state.ghosts.forEach(e=>{e.displayPos.x=e.targetPos.x=e.x*cellSize+cellSize/2,e.displayPos.y=e.targetPos.y=e.y*cellSize+cellSize/2}),state.minotaurs.forEach(e=>{e.displayPos.x=e.targetPos.x=e.x*cellSize+cellSize/2,e.displayPos.y=e.targetPos.y=e.y*cellSize+cellSize/2})}
+        function startGame(e){const levels=getActiveLevelsConfig();if(!levels||e>=levels.length){console.error("Invalid level configuration for mode:",state.gameMode,"level:",e),goToMainMenu();return}const levelConfig=levels[e];switchScreen("game-screen"),state.currentLevel=e,state.playerIsDefeated=!1,state.isTimerDefeat=!1,state.collectedDecor=0,state.totalDecor=0,state.ghosts=[],state.startGhosts=[],state.minotaurs=[],state.startMinotaurs=[],dom.timerDisplay.classList.remove("warning");const unlockedThemes=Object.keys(config.themes).filter(t=>state.unlocked.themes.includes(t));let themeToUse=state.theme;state.theme==="random"&&(themeToUse=unlockedThemes[Math.floor(Math.random()*unlockedThemes.length)]);currentTheme=JSON.parse(JSON.stringify(config.themes[themeToUse||"jungle"])),currentBgImage=loadedBackgroundImages[Math.floor(Math.random()*loadedBackgroundImages.length)],state.mazeWidth=levelConfig.w,state.mazeHeight=levelConfig.h;const mazeAlgorithm=levelConfig.mazeAlgorithm||"recursiveBacktracker";if("minotaur"===state.gameMode)currentTheme.finish=e<4?"🪜":"🏞️",currentTheme.decor=["🪙","💎"],state.finishPos={x:Math.floor(state.mazeWidth/2),y:Math.floor(state.mazeHeight/2)};else{const corners=[{x:0,y:0},{x:state.mazeWidth-1,y:0},{x:0,y:state.mazeHeight-1},{x:state.mazeWidth-1,y:state.mazeHeight-1}];"sidewinder"===mazeAlgorithm?state.startPos={x:Math.floor(Math.random()*state.mazeWidth),y:state.mazeHeight-1}:state.startPos={...corners[Math.floor(Math.random()*corners.length)]}}mazeGrid=generateMaze(state.mazeWidth,state.mazeHeight,state.startPos,mazeAlgorithm),"minotaur"!==state.gameMode&&(state.finishPos=findLongestPath(mazeGrid,mazeGrid[state.startPos.y][state.startPos.x])),addDecorations(mazeGrid,state.startPos,state.finishPos,levelConfig.bonuses),state.playerPos={...state.startPos};if("ghost"===state.gameMode||"all-in-one"===state.gameMode)for(let i=0;i<levelConfig.ghosts;i++){let ghostStartPos;const availablePos=[];for(let y=0;y<state.mazeHeight;y++)for(let x=0;x<state.mazeWidth;x++)Math.abs(x-state.playerPos.x)>3||Math.abs(y-state.playerPos.y)>3&&availablePos.push({x:x,y:y});ghostStartPos=availablePos.length>0?availablePos[Math.floor(Math.random()*availablePos.length)]:{x:Math.floor(Math.random()*state.mazeWidth),y:Math.floor(Math.random()*state.mazeHeight)};let patrolParams=levelConfig.ghostPatrol||{w:3,h:3},patrolPath=[];if(Math.random()<.5){const halfW=Math.floor((patrolParams.w-1)/2),halfH=Math.floor((patrolParams.h-1)/2),top=Math.max(0,ghostStartPos.y-halfH),bottom=Math.min(state.mazeHeight-1,ghostStartPos.y+halfH),left=Math.max(0,ghostStartPos.x-halfW),right=Math.min(state.mazeWidth-1,ghostStartPos.x+halfW);if(left===right&&top===bottom)patrolPath.push({x:left,y:top});else{for(let i=left;i<right;i++)patrolPath.push({x:i,y:top});for(let i=top;i<bottom;i++)patrolPath.push({x:right,y:i});for(let i=right;i>left;i--)patrolPath.push({x:i,y:bottom});for(let i=bottom;i>top;i--)patrolPath.push({x:left,y:i})}}else{const halfW=Math.floor((patrolParams.w-1)/2),halfH=Math.floor((patrolParams.h-1)/2),topY=Math.max(0,ghostStartPos.y-halfH),bottomY=Math.min(state.mazeHeight-1,ghostStartPos.y+halfH),leftX=Math.max(0,ghostStartPos.x-halfW),rightX=Math.min(state.mazeWidth-1,ghostStartPos.x+halfW);for(let i=ghostStartPos.x+1;i<=rightX;i++)patrolPath.push({x:i,y:ghostStartPos.y});for(let i=rightX;i>ghostStartPos.x;i--)patrolPath.push({x:i,y:ghostStartPos.y});for(let i=ghostStartPos.y+1;i<=bottomY;i++)patrolPath.push({x:ghostStartPos.x,y:i});for(let i=bottomY;i>ghostStartPos.y;i--)patrolPath.push({x:ghostStartPos.x,y:i});for(let i=ghostStartPos.x-1;i>=leftX;i--)patrolPath.push({x:i,y:ghostStartPos.y});for(let i=leftX;i<ghostStartPos.x;i++)patrolPath.push({x:i,y:ghostStartPos.y});for(let i=ghostStartPos.y-1;i>=topY;i--)patrolPath.push({x:ghostStartPos.x,y:i});for(let i=topY;i<ghostStartPos.y;i++)patrolPath.push({x:ghostStartPos.x,y:i})}0===patrolPath.length&&patrolPath.push({x:ghostStartPos.x,y:ghostStartPos.y});const ghost={...ghostStartPos,displayPos:{x:ghostStartPos.x*cellSize+cellSize/2,y:ghostStartPos.y*cellSize+cellSize/2},targetPos:{x:ghostStartPos.x*cellSize+cellSize/2,y:ghostStartPos.y*cellSize+cellSize/2},isIndicating:!1,nextMove:null,path:patrolPath,pathIndex:0,moveTimeout:null};state.ghosts.push(ghost),state.startGhosts.push({...ghostStartPos})}else if("minotaur"===state.gameMode)for(let i=0;i<levelConfig.minotaurs;i++){let minotaurStart={x:state.finishPos.x,y:state.finishPos.y};const minotaur={...minotaurStart,displayPos:{x:minotaurStart.x*cellSize+cellSize/2,y:minotaurStart.y*cellSize+cellSize/2},targetPos:{x:minotaurStart.x*cellSize+cellSize/2,y:minotaurStart.y*cellSize+cellSize/2},moveTimeout:null};state.minotaurs.push(minotaur),state.startMinotaurs.push({...minotaurStart})}if(["timer","all-in-one","minotaur"].includes(state.gameMode))dom.timerDisplay.style.display="flex",state.gameTimer.timeLeft=levelConfig.timer,updateTimerDisplay(),state.gameTimer.id=setInterval(countdown,1e3);else dom.timerDisplay.style.display="none";initialMazeGrid=JSON.parse(JSON.stringify(mazeGrid)),updateDecorCounter(),setTimeout(()=>{resizeCanvas(),stopGameLoop(),startIntroPhase()},50)}
+        function showHint(){if(state.hint.visible)return;const e=findSolutionPath(mazeGrid,state.playerPos,state.finishPos);e.length>1&&(state.hint.nextStep=e[1],state.hint.visible=!0,state.hint.timer&&clearTimeout(state.hint.timer),state.hint.timer=setTimeout(()=>hideHint(),2e3))}
+        function startIntroPhase(){state.isGameActive=!1,state.isIntroAnimationActive=!0,["timer","all-in-one","minotaur"].includes(state.gameMode)&&(dom.timerDisplay.style.display="flex"),gameLoop()}
+        function beginGameplay(){state.isIntroAnimationActive&&(state.isIntroAnimationActive=!1,state.dpadNavActive=!0,state.isGameActive=!0,["timer","all-in-one","minotaur"].includes(state.gameMode)&&!state.gameTimer.id&&(state.gameTimer.id=setInterval(countdown,1e3)),startGhostAI(),startMinotaurAI())}
+        function launchConfetti(){const e=document.querySelector("#victory-modal .animation-container");e.innerHTML="";for(let t=0;t<50;t++){const a=document.createElement("div");a.classList.add("confetti"),a.style.left=`${100*Math.random()}%`,a.style.backgroundColor=`hsl(${360*Math.random()}, 100%, 70%)`,a.style.animationDelay=`${.5*Math.random()}s`,a.style.animationDuration=`${2*Math.random()+2}s`,e.appendChild(a)}}
+        function showMinotaurVictoryAnimation(){audioManager.stop(),audioManager.play("https://lkalyadin.github.io/emojie_maze/assets/audio/sfx-piano-bar.mp3"),document.getElementById("minotaur-victory-player").textContent=currentTheme.player,showModal(dom.minotaurVictoryModal),setTimeout(()=>{hideModal(dom.minotaurVictoryModal),audioManager.stop();let stars=1;stars=state.collectedDecor===state.totalDecor?3:state.collectedDecor>=Math.ceil(state.totalDecor/2)?2:1,stars>(state.progress[state.gameMode]?.[state.currentLevel]||0)&&(state.progress[state.gameMode][state.currentLevel]=stars);const starsBefore = getTotalStars() - stars; const unlockedSomething = checkUnlocks(); saveGameData(); updateTotalStarsCounter();const starContainer=document.getElementById("star-rating-container");starContainer.innerHTML="";for(let i=1;i<=3;i++){const starEl=document.createElement("span");starEl.textContent="★",starEl.className=i<=stars?"star yellow":"star gray",starContainer.appendChild(starEl)}getActiveLevelsConfig().length-1>state.currentLevel?document.getElementById("next-level-button").style.display="flex":document.getElementById("next-level-button").style.display="none";const unlockMsgEl=document.getElementById("unlock-message");state.lastUnlockMessage?(unlockMsgEl.textContent=state.lastUnlockMessage,state.lastUnlockMessage=""):(unlockMsgEl.textContent="");if (unlockedSomething) { showUnlockAnimation(document.getElementById('victory-progress-bar'), () => { updateUnlockProgressBar(getTotalStars(), document.getElementById('victory-progress-bar')); }); } else { updateUnlockProgressBar(getTotalStars(), document.getElementById('victory-progress-bar')); }showModal(dom.victoryModal),audioManager.playSfx(config.audio.victorySfx[Math.floor(Math.random()*config.audio.victorySfx.length)]),launchConfetti()},7e3)}
+        function checkUnlocks() {
+            const totalStars = getTotalStars();
+            let newUnlock = false;
+            for (const unlock of config.unlocks) {
+                if (totalStars >= unlock.stars) {
+                    if (unlock.type === 'mode' && !state.unlocked.modes.includes(unlock.key)) {
+                        state.unlocked.modes.push(unlock.key);
+                        state.lastUnlockMessage = `${config.languages[state.settings.language].unlock_mode_message || 'New mode unlocked: '}${config.languages[state.settings.language][unlock.key] || unlock.key}`;
+                        newUnlock = true;
+                    } else if (unlock.type === 'theme' && !state.unlocked.themes.includes(unlock.key)) {
+                        state.unlocked.themes.push(unlock.key);
+                        state.lastUnlockMessage = `${config.languages[state.settings.language].unlock_theme_message || 'New theme unlocked: '}${config.languages[state.settings.language][unlock.key] || unlock.key}`;
+                        newUnlock = true;
+                    }
+                }
+            }
+            if (newUnlock) {
+                updateGameModeScreen();
+                updateThemesScreen();
+            }
+            return newUnlock;
+        }
+        function checkWin(){if(isStoppingGame||!state.isGameActive)return!1;if(state.playerPos.x===state.finishPos.x&&state.playerPos.y===state.finishPos.y){state.isGameActive=!1;setTimeout(()=>{stopGame();if("minotaur"===state.gameMode&&4===state.currentLevel)showMinotaurVictoryAnimation();else{let e=1;state.totalDecor>0?e=state.collectedDecor===state.totalDecor?3:state.collectedDecor>=Math.ceil(state.totalDecor/2)?2:1:e=3,e>(state.progress[state.gameMode]?.[state.currentLevel]||0)&&(state.progress[state.gameMode][state.currentLevel]=e);const unlockedSomething = checkUnlocks();saveGameData();const totalStars=getTotalStars();updateTotalStarsCounter();const t=document.getElementById("star-rating-container");t.innerHTML="";for(let a=1;a<=3;a++){const o=document.createElement("span");o.textContent="★",o.className=a<=e?"star yellow":"star gray",t.appendChild(o)}const unlockMsgEl=document.getElementById("unlock-message");state.lastUnlockMessage?(unlockMsgEl.textContent=state.lastUnlockMessage,state.lastUnlockMessage=""):(unlockMsgEl.textContent="");const maxLevel=getActiveLevelsConfig().length-1,nextLevelUnlocked=state.currentLevel<maxLevel&&(state.progress[state.gameMode]?.[state.currentLevel]>0||0===state.currentLevel);getActiveLevelsConfig().length-1>state.currentLevel&&nextLevelUnlocked?document.getElementById("next-level-button").style.display="flex":document.getElementById("next-level-button").style.display="none";if (unlockedSomething) { showUnlockAnimation(document.getElementById('victory-progress-bar'), () => { updateUnlockProgressBar(totalStars, document.getElementById('victory-progress-bar')); }); } else { updateUnlockProgressBar(totalStars, document.getElementById('victory-progress-bar')); }showModal(dom.victoryModal),audioManager.playSfx(config.audio.victorySfx[Math.floor(Math.random()*config.audio.victorySfx.length)]),launchConfetti()}},300);return!0}return!1}
+        function showLevelSelectionScreen(e){state.gameMode=e;const t=document.getElementById("level-selection-grid");t.innerHTML="";const a=getActiveLevelsConfig(),o=Object.keys(state.progress[e]||{}).filter(lvl => state.progress[e][lvl] > 0).length;a.forEach((n,s)=>{const i=document.createElement("button");i.className="level-card nav-item",i.dataset.navIndex=s+1;const l=state.progress[e]?.[s]||0,c=s<=o;if(c){let e="";for(let t=0;t<3;t++)e+=`<span class="star ${t<l?"filled":""}">★</span>`;i.innerHTML=`\n <div class="level-number">${s+1}</div>\n <div class="level-stars">${e}</div>\n `,i.addEventListener("click",()=>startGame(s))}else i.innerHTML='<span class="level-number">🔒</span>',i.classList.add("locked");t.appendChild(i)}),switchScreen("level-selection-screen")}
+        function showModal(e){const t=[dom.confirmResetModal,dom.confirmExitModal,dom.victoryModal,dom.aboutModal].includes(e);state.dpadNavActive=!t,state.modalNavIndex=0,e.classList.add("visible");const a=Array.from(e.querySelectorAll(".modal-button"));state.dpadNavActive?a.forEach((e,t)=>e.classList.toggle("selected",0===t)):a.forEach(e=>e.classList.remove("selected"))}
+        function hideModal(e){e.classList.remove("visible");Array.from(e.querySelectorAll(".modal-button")).forEach(e=>e.classList.remove("selected")),setupNavigation()}
+        function setLanguage(e){state.settings.language=e,document.documentElement.lang=e,document.querySelectorAll("[data-lang]").forEach(t=>{const a=t.dataset.lang,o=config.languages[e]?.[a];if(o){const n=t.querySelector("span:not(.card-icon)")||t;n&&(n.textContent=o)}});const t=document.querySelector("#language-button .lang-text");t&&(t.textContent=config.languageNames[e]||e.toUpperCase());const a=document.querySelector("#loading-screen p");a&&(a.textContent="")}
+        function applyColorTheme(){document.body.classList.toggle('light-theme',state.settings.colorTheme==='light'),updateThemeButtonUI()}
+        function updateThemeButtonUI(){const e=document.getElementById('theme-toggle-button');if(e){const t=e.querySelector('.card-icon');t&&(t.textContent=state.settings.colorTheme==='light'?'☀️':'🌙')}}
+        function updateSoundButtonUI(){const e=document.getElementById('sound-toggle-button');if(e){const t=e.querySelector('.card-icon');t&&(t.textContent=state.settings.sound?'🔊':'🔇')}}
+        function updateDpadButtonUI(){const e=document.getElementById('dpad-toggle-button');if(e){const t=e.querySelector('.dpad-status');t&&(t.textContent=state.settings.dpad?'✔️':'❌')}}
+        function updateModeCompletionPercentage(){const e=getActiveLevelsConfig();for(const a of["classic","flashlight","ghost","timer","minotaur","all-in-one"]){const o=document.getElementById(`mode-${a}`);if(o&&!o.classList.contains("locked")){const n=o.querySelector(".mode-percentage");if(n){const s=a==="minotaur"?5:e.length,i=3*s,l=Object.values(state.progress[a]||{}).reduce((e,t)=>e+t,0);n.textContent=`${i>0?Math.round(l/i*100):0}%`}}}}
+        function showUnlockAnimation(container, onComplete) {
+            if (!container) return;
+            const fill = container.querySelector('.progress-bar-fill');
+            const label = container.querySelector('.required-stars-label');
+            
+            if (!fill || !label) return;
+
+            audioManager.playSfx('https://lkalyadin.github.io/emojie_maze/assets/audio/sfx-piano-coda3.mp3');
+            fill.style.transition = 'width 0.5s ease-out';
+            fill.style.width = '100%';
+            label.classList.add('sparkle-animation');
+            
+            setTimeout(() => {
+                label.classList.remove('sparkle-animation');
+                fill.style.transition = 'none';
+                fill.style.width = '0%';
+                setTimeout(() => {
+                    fill.style.transition = 'width 0.5s ease-out';
+                     if (onComplete) onComplete();
+                }, 50);
+            }, 1000);
+        }
+        function updateUnlockProgressBar(totalStars, container) {
+            if (!container) return;
+            const currentStars = totalStars;
+            const nextUnlock = config.unlocks.find(u => currentStars < u.stars);
+            
+            if (!nextUnlock) {
+                container.style.display = 'none';
+                return;
+            }
+            container.style.display = 'block';
+
+            const prevUnlockStars = config.unlocks.slice().reverse().find(u => u.stars <= currentStars)?.stars || 0;
+            const requiredStars = nextUnlock.stars;
+            const progress = (currentStars - prevUnlockStars) / (requiredStars - prevUnlockStars);
+            
+            container.querySelector('.required-stars-label').textContent = nextUnlock.emoji;
+            container.querySelector('.progress-bar-fill').style.width = `${Math.min(100, progress * 100)}%`;
+            container.querySelector('.progress-bar-content').textContent = `${currentStars} / ${requiredStars} ⭐`;
+        }
+        function handleCanvasClick(e){if(state.isIntroAnimationActive)return void beginGameplay();if(state.isMoving||!state.isGameActive||state.playerIsDefeated)return;const t=dom.mazeCanvas.getBoundingClientRect(),a=(e.clientX-t.left)/(dom.mazeCanvas.width/t.width),o=(e.clientY-t.top)/(dom.mazeCanvas.height/t.height),n=a-(state.playerPos.x*cellSize+cellSize/2),s=o-(state.playerPos.y*cellSize+cellSize/2);initiatePlayerMove(Math.abs(n)>Math.abs(s)?n>0?"right":"left":s>0?"down":"up")}
+        function handlePageVisibility(){document.hidden?(state.gameTimer.id&&(clearInterval(state.gameTimer.id),state.gameTimer.isPaused=!0),audioManager.musicWasPlaying=audioManager.currentTrack&&!audioManager.currentTrack.paused,audioManager.currentTrack?.pause(),audioManager.warningSfx?.pause()):(audioManager.musicWasPlaying&&audioManager.currentTrack?.play().catch(e=>{}),state.gameTimer.isPaused&&(state.gameTimer.isPaused=!1,state.isGameActive&&["timer","all-in-one","minotaur"].includes(state.gameMode)&&state.gameTimer.timeLeft>0&&(state.gameTimer.timeLeft<=20&&audioManager.playWarningSfx(config.audio.timerWarningSfx),state.gameTimer.id=setInterval(countdown,1e3))))}
+        async function preloadAssets(){const e=config.backgrounds.map(e=>new Promise(t=>{const a=new Image;a.onload=()=>t(a),a.onerror=()=>{console.warn(`Failed to load image: ${e}`),t(null)},a.crossOrigin="Anonymous",a.src=e}));loadedBackgroundImages.push(...(await Promise.all(e)).filter(e=>null!==e)),setTimeout(goToMainMenu,500)}
+        function unlockAll() {
+            state.unlocked.modes = ['classic', 'flashlight', 'ghost', 'timer', 'minotaur', 'all-in-one', 'random'];
+            state.unlocked.themes = Object.keys(config.themes);
+            saveGameData();
+            updateGameModeScreen();
+            updateThemesScreen();
+            updateTotalStarsCounter(); 
+            alert('All content unlocked!');
+        }
+        function buildGameModes() {
+            const panel = document.querySelector('#game-mode-screen .menu-panel');
+            panel.innerHTML = '';
+            const modes = [
+                { key: 'classic', emoji: '🗺️', nav: 1 },
+                { key: 'flashlight', emoji: '🔦', nav: 2 },
+                { key: 'ghost', emoji: '👻', nav: 3 },
+                { key: 'timer', emoji: '⏰', nav: 4 },
+                { key: 'all-in-one', emoji: '🗺️🔦👻⏰', nav: 5 },
+                { key: 'minotaur', emoji: '🐂', nav: 6 },
+                { key: 'random', emoji: '🎲', nav: 7 }
+            ];
+            
+            modes.forEach(modeInfo => {
+                const btn = document.createElement('button');
+                btn.id = `mode-${modeInfo.key}`;
+                btn.className = 'mode-card nav-item';
+                btn.dataset.navIndex = modeInfo.nav;
+                btn.dataset.mode = modeInfo.key;
+                
+                const isUnlocked = state.unlocked.modes.includes(modeInfo.key);
+                let content = `<span class="card-icon">${modeInfo.emoji}</span> <span data-lang="${modeInfo.key}"></span>`;
+                
+                if (isUnlocked) {
+                    if (modeInfo.key !== 'random') {
+                        content += `<div class="mode-percentage">0%</div>`;
+                    }
+                    btn.addEventListener('click', () => {
+                        if (modeInfo.key === 'random') {
+                            const availableModes = state.unlocked.modes.filter(m => m !== 'random' && m !== 'minotaur');
+                            state.gameMode = availableModes[Math.floor(Math.random() * availableModes.length)];
+                            const levels = getActiveLevelsConfig();
+                            const unlockedLevelsCount = Object.keys(state.progress[state.gameMode] || {}).filter(l => state.progress[state.gameMode][l] > 0).length + 1;
+                            const levelToPlay = Math.floor(Math.random() * Math.min(levels.length, unlockedLevelsCount));
+                            startGame(levelToPlay);
+                        } else {
+                           showLevelSelectionScreen(modeInfo.key);
+                        }
+                    });
+                } else {
+                    btn.classList.add('locked');
+                    const unlockReq = config.unlocks.find(u => u.key === modeInfo.key);
+                    if (unlockReq) {
+                        content += `<div class="unlock-cost">⭐ ${unlockReq.stars}</div>`;
+                    }
+                }
+                
+                btn.innerHTML = content;
+                panel.appendChild(btn);
+            });
+            updateModeCompletionPercentage();
+        }
+        function updateGameModeScreen() {
+             buildGameModes();
+             setLanguage(state.settings.language);
+        }
+        function buildThemes() {
+            const panel = document.querySelector('#themes-screen .menu-panel');
+            panel.querySelectorAll('.theme-button').forEach(btn => btn.remove());
+            
+            const getUnlockStars = (key) => {
+                if (state.unlocked.themes.includes(key) && !config.unlocks.find(u => u.key === key)) {
+                    return 0; // Default themes
+                }
+                const unlockReq = config.unlocks.find(u => u.type === 'theme' && u.key === key);
+                return unlockReq ? unlockReq.stars : Infinity;
+            };
+
+            const sortedThemeKeys = Object.keys(config.themes).sort((a, b) => {
+                return getUnlockStars(a) - getUnlockStars(b);
+            });
+
+            let themeNavIndex = 2;
+            sortedThemeKeys.forEach(key => {
+                const theme = config.themes[key];
+                const item = document.createElement('button');
+                item.className = 'menu-button nav-item theme-button';
+                item.dataset.themeKey = key;
+                item.dataset.navIndex = themeNavIndex++;
+
+                const isUnlocked = state.unlocked.themes.includes(key);
+
+                if (isUnlocked) {
+                    item.innerHTML = `<span>${theme.player}</span> <span class="theme-name" data-lang="${key}"></span> <span>${theme.finish}</span>`;
+                    item.addEventListener('click', () => {
+                        state.theme = key;
+                        updateEmojiBackground();
+                        switchScreen('main-menu-screen');
+                    });
+                } else {
+                    item.classList.add('locked');
+                    const unlockReq = config.unlocks.find(u => u.key === key);
+                    item.innerHTML = `<span>${theme.player}</span> <span class="theme-name" data-lang="${key}"></span> ${unlockReq ? `<div class="unlock-cost">⭐ ${unlockReq.stars}</div>` : ''}`;
+                }
+                panel.appendChild(item);
+            });
+        }
+        function updateThemesScreen() {
+            buildThemes();
+            setLanguage(state.settings.language);
+        }
+        function initialize(){
+            loadGameData();
+            loadSettings();
+            applyColorTheme();
+            updateGameModeScreen();
+            updateThemesScreen();
+            updateTotalStarsCounter();
+            updateSoundButtonUI();
+            updateDpadButtonUI();
+
+            const userLang = state.settings.language || navigator.language.slice(0, 2);
+            const defaultLang = config.languages[userLang] ? userLang : 'ru';
+            setLanguage(defaultLang);
+
+            currentTheme = "random"===state.theme||!config.themes[state.theme]?config.themes[Object.keys(config.themes)[Math.floor(Math.random()*Object.keys(config.themes).length)]]:config.themes[state.theme];
+            updateEmojiBackground();
+            document.addEventListener('visibilitychange',handlePageVisibility);
+            document.addEventListener('keydown',handleGlobalKeyDown);
+            let resizeTimeout;window.addEventListener('resize',()=>{clearTimeout(resizeTimeout),resizeTimeout=setTimeout(()=>{'game-screen'===state.currentScreen&&resizeCanvas(),'level-selection-screen'===state.currentScreen&&showLevelSelectionScreen(state.gameMode),setupNavigation()},100)});
+            
+            const addEvt=(id,evt,fn)=>document.getElementById(id)?.addEventListener(evt,fn);
+            
+            addEvt('play-button','click',()=>{updateGameModeScreen(); switchScreen('game-mode-screen');});
+            addEvt('settings-button','click',()=>switchScreen('settings-screen'));
+            addEvt('themes-button','click',()=>{updateThemesScreen(); switchScreen('themes-screen')});
+            addEvt('about-button','click',()=>showModal(dom.aboutModal));
+            document.querySelectorAll('.back-button').forEach(e=>e.addEventListener('click',()=>switchScreen(e.dataset.targetScreen)));
+            addEvt('return-menu-button','click',()=>{showModal(dom.confirmExitModal),state.isGameActive=!1,stopGhostAI(),stopMinotaurAI()});
+            addEvt('hint-button','click',showHint);
+            addEvt('restart-game-button','click',restartLevel);
+            addEvt('menu-button-victory','click',()=>{hideModal(dom.victoryModal),showLevelSelectionScreen(state.gameMode)});
+            addEvt('next-level-button','click',()=>{hideModal(dom.victoryModal),startGame(state.currentLevel+1)});
+            addEvt('retry-level-button-victory','click',restartLevel);
+            addEvt('confirm-exit-yes','click',()=>{hideModal(dom.confirmExitModal),stopGame(),showLevelSelectionScreen(state.gameMode)});
+            addEvt('confirm-exit-no','click',()=>{hideModal(dom.confirmExitModal),state.playerIsDefeated||(state.isGameActive=!0,startGhostAI(),startMinotaurAI())});
+            addEvt('reset-progress-button','click',()=>showModal(dom.confirmResetModal));
+            addEvt('confirm-reset-yes','click',()=>{hideModal(dom.confirmResetModal),resetProgress()});
+            addEvt('confirm-reset-no','click',()=>hideModal(dom.confirmResetModal));
+            addEvt('tv-back-home','click',()=>{hideModal(dom.tvBackModal),stopGame(),switchScreen('main-menu-screen')});
+            addEvt('tv-back-restart','click',restartLevel);
+            addEvt('tv-back-hint','click',()=>{hideModal(dom.tvBackModal),showHint(),state.isGameActive=!0});
+            addEvt('tv-back-cancel','click',()=>{hideModal(dom.tvBackModal),state.playerIsDefeated||(state.isGameActive=!0,startGhostAI(),startMinotaurAI())});
+            addEvt('about-modal-close','click',()=>hideModal(dom.aboutModal));
+            addEvt('random-theme-button','click',()=>{state.theme='random',updateEmojiBackground(),switchScreen('main-menu-screen')});
+            
+            const cheatCode = ['theme', 'lang', 'dpad', 'reset', 'dpad', 'lang', 'theme'];
+            document.querySelectorAll('#settings-screen .menu-button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const key = btn.dataset.cheatKey;
+                    if (key) {
+                        state.cheatSequence.push(key);
+                        if (state.cheatSequence.length > cheatCode.length) {
+                            state.cheatSequence.shift();
+                        }
+                        if (JSON.stringify(state.cheatSequence) === JSON.stringify(cheatCode)) {
+                            unlockAll();
+                            state.cheatSequence = [];
+                        }
+                    }
+                });
+            });
+
+            addEvt('dpad-toggle-button','click',()=>{state.settings.dpad=!state.settings.dpad,updateDpadButtonUI(),saveSettings()});
+            addEvt('sound-toggle-button','click',()=>{state.settings.sound=!state.settings.sound,state.settings.sound?'game-screen'!==state.currentScreen&&audioManager.play(config.audio.menu,!0):(audioManager.stop(),audioManager.stopWarningSfx()),updateSoundButtonUI(),saveSettings()});
+            addEvt('theme-toggle-button','click',()=>{state.settings.colorTheme='light'===state.settings.colorTheme?'dark':'light',applyColorTheme(),saveSettings()});
+            addEvt('language-button','click',()=>{const e=Object.keys(config.languages);setLanguage(e[(e.indexOf(state.settings.language)+1)%e.length]), saveSettings()});
+            const dpadButtons={'dpad-up':'up','dpad-down':'down','dpad-left':'left','dpad-right':'right'};
+            for(const[btnId,direction]of Object.entries(dpadButtons)){const button=document.getElementById(btnId),dpadPress=e=>{e.preventDefault(),state.isIntroAnimationActive?(beginGameplay(),setTimeout(()=>initiatePlayerMove(direction),0)):initiatePlayerMove(direction)};button.addEventListener('mousedown',dpadPress),button.addEventListener('touchstart',dpadPress,{passive:!1})}
+            let touchStartX=0,touchStartY=0;
+            const handleSwipe=e=>{const t=e.changedTouches[0].screenX-touchStartX,a=e.changedTouches[0].screenY-touchStartY;if(state.isIntroAnimationActive)return void beginGameplay();(Math.abs(t)>30||Math.abs(a)>30)&&initiatePlayerMove(Math.abs(t)>Math.abs(a)?t>0?"right":"left":a>0?"down":"up")};
+            dom.mazeCanvas.addEventListener('touchstart',e=>{e.preventDefault(),touchStartX=e.changedTouches[0].screenX,touchStartY=e.changedTouches[0].screenY},{passive:!1});
+            dom.mazeCanvas.addEventListener('touchend',e=>{e.preventDefault(),handleSwipe(e)},{passive:!1});
+            addEvt('maze-canvas','click',handleCanvasClick);
+            preloadAssets();
+            switchScreen('loading-screen');
+        }
+        initialize();
+    });
+    </script>
+</body>
+</html>

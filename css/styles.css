@@ -1016,8 +1016,8 @@ body.light-theme .modal-content {
 /* Контейнер для D-pad */
 #dpad-container {
     width: 100%;
-    min-height: 60px;
-    /* Всегда резервирует высоту, создавая отступ */
+    min-height: 50px;
+    /* Уменьшили высоту и отступ */
     flex-shrink: 0;
     /* Запрещаем контейнеру сжиматься */
     display: flex;
@@ -1025,7 +1025,8 @@ body.light-theme .modal-content {
     justify-content: center;
     align-items: center;
     gap: 12px;
-    padding: 10px 0;
+    padding: 8px 0;
+    /* Уменьшили вертикальный отступ */
     z-index: 3;
     pointer-events: none;
     /* Контейнер не перехватывает клики, когда пустой */
@@ -1033,13 +1034,15 @@ body.light-theme .modal-content {
 
 /* Сами кнопки D-pad */
 .dpad-btn {
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
+    /* Уменьшили размер кнопок */
     background-color: var(--card-bg);
     color: var(--text-dark);
     border: none;
     border-radius: 50%;
-    font-size: 2.2rem;
+    font-size: 2.0rem;
+    /* Уменьшили размер иконок */
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -1055,4 +1058,14 @@ body.light-theme .modal-content {
 /* Показываем кнопки, только когда D-pad включен */
 #game-screen.dpad-on .dpad-btn {
     visibility: visible;
+}
+
+#main-menu-screen > .sub-screen-top-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding: calc(env(safe-area-inset-top, 10px) + 10px) 24px 10px;
+    z-index: 10; /* Убедиться, что панель поверх другого контента */
 }

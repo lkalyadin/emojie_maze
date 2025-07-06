@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css">	
+    <link rel="stylesheet" href="https://lkalyadin.github.io/emojie_maze/css/styles.css">	
     <script src="config.js" defer></script>
 </head>
 <body>
@@ -157,7 +157,7 @@
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {       
-		const state={currentScreen:'loading-screen',settings:{dpad:!1,sound:!0,language:'ru',colorTheme:'dark'},progress:{classic:{},flashlight:{},ghost:{},timer:{},minotaur:{},"all-in-one":{}},unlocked:{modes:['classic','random'],themes:['jungle','antarctica','snail']},lastUnlockMessage:'',allLevelsUnlocked:!1,cheatSequence:[],theme:'random',gameMode:'classic',currentLevel:0,dpadNavActive:!1,mazeWidth:4,mazeHeight:4,isGameActive:!1,isAnimating:!1,isMoving:!1,playerMoveDirection:null,isIntroAnimationActive:!1,playerIsDefeated:!1,isTimerDefeat:!1,isPaused:!1,defeatAnimation:{progress:0,bubbles:[]},gameTimer:{id:null,timeLeft:0},currentNavIndex:0,navigableItems:[],modalNavIndex:0,playerPos:{x:0,y:0},startPos:{x:0,y:0},finishPos:{x:0,y:0},ghosts:[],startGhosts:[],minotaurs:[],startMinotaurs:[],hint:{nextStep:null,visible:!1,timer:null},totalDecor:0,collectedDecor:0,wallColor:'#4B5563'};
+		const state={currentScreen:'loading-screen',settings:{dpad:!1,sound:!0,language:'ru',colorTheme:'dark'},progress:{classic:{},flashlight:{},ghost:{},timer:{},minotaur:{},"all-in-one":{}},unlocked:{modes:['classic','random'],themes:['jungle','antarctica','snail']},lastUnlockMessage:'',allLevelsUnlocked:!1,cheatSequence:[],theme:'random',gameMode:'classic',currentLevel:0,dpadNavActive:!1,mazeWidth:4,mazeHeight:4,isGameActive:!1,isAnimating:!1,isMoving:!1,playerMoveDirection:null,isIntroAnimationActive:!1,playerIsDefeated:!1,isTimerDefeat:!1,defeatAnimation:{progress:0,bubbles:[]},gameTimer:{id:null,timeLeft:0,isPaused:!1},currentNavIndex:0,navigableItems:[],modalNavIndex:0,playerPos:{x:0,y:0},startPos:{x:0,y:0},finishPos:{x:0,y:0},ghosts:[],startGhosts:[],minotaurs:[],startMinotaurs:[],hint:{nextStep:null,visible:!1,timer:null},totalDecor:0,collectedDecor:0,wallColor:'#4B5563'};
         const audioManager={currentTrack:null,warningSfx:null,musicWasPlaying:!1,play(e,t=!1){if(!state.settings.sound)return;const a=e.split("/").pop();if(this.currentTrack&&this.currentTrack.src.endsWith(a)){this.currentTrack.paused&&this.currentTrack.play().catch(e=>{});return}this.stop(),this.currentTrack=new Audio(e),this.currentTrack.loop=t;const o=this.currentTrack.play();void 0!==o&&o.catch(()=>{const e=()=>{state.settings.sound&&this.currentTrack?.play().catch(e=>{}),window.removeEventListener("click",e),window.removeEventListener("keydown",e)};window.addEventListener("click",e,{once:!0}),window.addEventListener("keydown",e,{once:!0})})},stop(){this.currentTrack&&(this.currentTrack.pause(),this.currentTrack.onended=null,this.currentTrack.src="",this.currentTrack=null)},playSfx(e){if(!state.settings.sound)return;new Audio(e).play().catch(e=>{})},playWarningSfx(e,t=!0){state.settings.sound&&(this.stopWarningSfx(),this.warningSfx=new Audio(e),this.warningSfx.loop=t,this.warningSfx.play().catch(e=>{}))},stopWarningSfx(){this.warningSfx&&(this.warningSfx.pause(),this.warningSfx.src="",this.warningSfx=null)},playGameMusic(){if(state.gameMode==="minotaur"){this.play(config.audio.minotaurMusic,!0);return}this.stop();let e=[...config.audio.game];const t=()=>{if(!state.settings.sound||"game-screen"!==state.currentScreen)return;0===e.length&&(e=[...config.audio.game]);const a=e.splice(Math.floor(Math.random()*e.length),1)[0];this.play(a,!1),this.currentTrack&&(this.currentTrack.onended=t)};t()}};
         const dom = {
             loading: document.getElementById('loading-screen'),
@@ -243,36 +243,11 @@ function updateTotalStarsCounter() {
     document.querySelectorAll(".stars-clone").forEach(el => el.innerHTML = newText);
     updateUnlockProgressBar(totalStars, document.getElementById('main-menu-progress-bar'));
 }
-function generateMinotaurLairMaze(grid) {
-            const height = grid.length;
-            const width = grid[0].length;
-            const centerX = Math.floor(width / 2);
-            const centerY = Math.floor(height / 2);
-
-            // Шаг 1: "Прорубаем" вертикальный коридор через центр
-            for (let y = 0; y < height - 1; y++) {
-                grid[y][centerX].walls.bottom = false;
-                grid[y + 1][centerX].walls.top = false;
-            }
-
-            // Шаг 2: "Прорубаем" горизонтальный коридор через центр
-            for (let x = 0; x < width - 1; x++) {
-                grid[centerY][x].walls.right = false;
-                // --- СТРОКА НИЖЕ ИСПРАВЛЕНА ---
-                grid[centerY][x + 1].walls.left = false;
-            }
-
-            // Шаг 3: Теперь запускаем стандартный алгоритм на получившейся
-            // сетке с уже готовыми коридорами. Он "обрастет" их случайными путями.
-            // Это гарантирует, что 4 главных пути всегда останутся доступными.
-            const startPos = { x: centerX, y: centerY };
-            return generateRecursiveBacktrackerMaze(grid, startPos);
-        }
-        function resetProgress(){state.allLevelsUnlocked = false;state.progress={classic:{},flashlight:{},ghost:{},timer:{},minotaur:{},"all-in-one":{}};state.unlocked={modes:['classic','random'],themes:['jungle','antarctica','snail']};saveGameData(),updateTotalStarsCounter(),updateModeCompletionPercentage(),updateGameModeScreen(),"level-selection-screen"===state.currentScreen&&showLevelSelectionScreen(state.gameMode)}
+        function resetProgress(){state.allLevelsUnlocked = false;state.progress={classic:{},flashlight:{},ghost:{},timer:{},minotaur:{},"all-in-one":{}};state.unlocked={modes:['classic','random'],themes:['jungle','antarctica','snail']};saveGameData(),updateTotalStarsCounter(),updateModeCompletionPercentage(),updateGameModeScreen(),updateThemesScreen(),"level-selection-screen"===state.currentScreen&&showLevelSelectionScreen(state.gameMode)}
         function stopPlayerMove(){playerMoveInterval&&(clearInterval(playerMoveInterval),playerMoveInterval=null),state.isMoving=!1,state.playerMoveDirection=null,state.playerIsDefeated||!state.isGameActive||checkWin()}
         function stopGhostAI(){ghostMoveIntervals.forEach(e=>clearInterval(e)),ghostMoveIntervals=[],state.ghosts.forEach(e=>{e.moveTimeout&&clearTimeout(e.moveTimeout)})}
         function stopMinotaurAI() {minotaurMoveIntervals.forEach(e => clearInterval(e)); minotaurMoveIntervals = []; state.minotaurs.forEach(m => { if (m.moveTimeout) clearTimeout(m.moveTimeout); });}
-        function stopGame(){isStoppingGame||(isStoppingGame=!0,stopGameLoop(),stopPlayerMove(),stopGhostAI(),stopMinotaurAI(),clearInterval(state.gameTimer.id),state.gameTimer.id=null,audioManager.stopWarningSfx(),dom.timerDisplay.style.display="none",isStoppingGame=!1)}
+        function stopGame(){isStoppingGame||(isStoppingGame=!0,stopGameLoop(),stopPlayerMove(),stopGhostAI(),stopMinotaurAI(),clearInterval(state.gameTimer.id),state.gameTimer.id=null,state.gameTimer.isPaused=!1,audioManager.stopWarningSfx(),dom.timerDisplay.style.display="none",isStoppingGame=!1)}
         function switchScreen(e){stopGame();const t=document.getElementById(state.currentScreen);"game-screen"===state.currentScreen&&t&&t.querySelectorAll("#return-menu-button, #restart-game-button, #hint-button").forEach(e=>{e.removeAttribute("tabindex")}),t&&t.classList.remove("active");const a=document.getElementById(e);a&&(a.classList.add("active"),"game-screen"===e&&a.querySelectorAll("#return-menu-button, #restart-game-button, #hint-button").forEach(e=>{e.setAttribute("tabindex","-1")})),state.currentScreen=e,state.dpadNavActive=!1,state.isIntroAnimationActive=!1;if("main-menu-screen"===e){updateTotalStarsCounter()}document.getElementById('main-menu-progress-bar').style.display = "main-menu-screen" === e ? "block" : "none";if(e==='settings-screen'){state.cheatSequence=[]}updateEmojiBackground(),"game-mode-screen"===e&&updateModeCompletionPercentage(),document.getElementById("game-screen").classList.toggle("dpad-on",state.settings.dpad),setupNavigation();"game-screen"===e?audioManager.playGameMusic():audioManager.play(config.audio.menu,!0)}
         function goToMainMenu(){switchScreen("main-menu-screen")}
         function setupNavigation(){const e=document.getElementById(state.currentScreen);if(!e)return state.navigableItems=[],void(state.currentNavIndex=0);const t=Array.from(e.querySelectorAll(".nav-item:not(.locked), .back-button"));state.navigableItems=t.filter(e=>!e.classList.contains("disabled")).sort((e,t)=>{const a=parseInt(e.dataset.navIndex||"999"),o=parseInt(t.dataset.navIndex||"999");return a-o}),state.navigableItems.length>0?state.currentNavIndex=state.navigableItems.some(e=>0===parseInt(e.dataset.navIndex))&&state.navigableItems.length>1?1:0:state.currentNavIndex=0,updateNavSelection()}
@@ -287,16 +262,7 @@ function generateMinotaurLairMaze(grid) {
         function generateRecursiveBacktrackerMaze(grid,startPos){let stack=[grid[startPos.y][startPos.x]];grid[startPos.y][startPos.x].visited=!0;while(stack.length>0){let current=stack.pop();let{x,y}=current;let neighbors=[];y>0&&!grid[y-1][x].visited&&neighbors.push(grid[y-1][x]);x<grid[0].length-1&&!grid[y][x+1].visited&&neighbors.push(grid[y][x+1]);y<grid.length-1&&!grid[y+1][x].visited&&neighbors.push(grid[y+1][x]);x>0&&!grid[y][x-1].visited&&neighbors.push(grid[y][x-1]);if(neighbors.length>0){stack.push(current);let next=neighbors[Math.floor(Math.random()*neighbors.length)];next.y<current.y?(current.walls.top=!1,next.walls.bottom=!1):next.x>current.x?(current.walls.right=!1,next.walls.left=!1):next.y>current.y?(current.walls.bottom=!1,next.walls.top=!1):next.x<current.x&&(current.walls.left=!1,next.walls.right=!1);next.visited=!0;stack.push(next)}}return grid}
         function generateSidewinderMaze(grid){for(let y=0;y<grid.length;y++){let runStart=0;for(let x=0;x<grid[0].length;x++){const shouldCloseRun=x+1===grid[0].length||y>0&&Math.random()<.5;if(shouldCloseRun){if(y>0){const carveX=runStart+Math.floor(Math.random()*(x-runStart+1));grid[y][carveX].walls.top=!1,grid[y-1][carveX].walls.bottom=!1}runStart=x+1}else grid[y][x].walls.right=!1,grid[y][x+1].walls.left=!1}}return grid}
         function generatePrimMaze(grid){const frontiers=[];const startX=Math.floor(Math.random()*grid[0].length),startY=Math.floor(Math.random()*grid.length);grid[startY][startX].visited=!0;const addFrontiers=(x,y)=>{y>0&&!grid[y-1][x].visited&&frontiers.push({x:x,y:y-1,from:{x:x,y:y}}),y<grid.length-1&&!grid[y+1][x].visited&&frontiers.push({x:x,y:y+1,from:{x:x,y:y}}),x>0&&!grid[y][x-1].visited&&frontiers.push({x:x-1,y:y,from:{x:x,y:y}}),x<grid[0].length-1&&!grid[y][x+1].visited&&frontiers.push({x:x+1,y:y,from:{x:x,y:y}})};addFrontiers(startX,startY);while(frontiers.length>0){const randIndex=Math.floor(Math.random()*frontiers.length),{x,y,from}=frontiers.splice(randIndex,1)[0];if(grid[y][x].visited)continue;grid[y][x].visited=!0,x===from.x?y<from.y?(grid[from.y][from.x].walls.top=!1,grid[y][x].walls.bottom=!1):(grid[from.y][from.x].walls.bottom=!1,grid[y][x].walls.top=!1):x<from.x?(grid[from.y][from.x].walls.left=!1,grid[y][x].walls.right=!1):(grid[from.y][from.x].walls.right=!1,grid[y][x].walls.left=!1);addFrontiers(x,y)}return grid.forEach(row=>row.forEach(cell=>cell.visited=!1)),grid}
-        function generateMaze(width,height,startPos,algorithm='recursiveBacktracker'){
-            let grid=Array.from({length:height},(_,y)=>Array.from({length:width},(_,x)=>({x,y,walls:{top:!0,right:!0,bottom:!0,left:!0},visited:!1,decor:null})));
-            switch(algorithm){
-                // --- Новый алгоритм --- //
-                case'minotaurLair':return generateMinotaurLairMaze(grid);       
-                case'sidewinder':return generateSidewinderMaze(grid);
-                case'prim':return generatePrimMaze(grid);
-                case'recursiveBacktracker':default:return generateRecursiveBacktrackerMaze(grid,startPos)
-            }
-        }
+        function generateMaze(width,height,startPos,algorithm='recursiveBacktracker'){let grid=Array.from({length:height},(_,y)=>Array.from({length:width},(_,x)=>({x,y,walls:{top:!0,right:!0,bottom:!0,left:!0},visited:!1,decor:null})));switch(algorithm){case'sidewinder':return generateSidewinderMaze(grid);case'prim':return generatePrimMaze(grid);case'recursiveBacktracker':default:return generateRecursiveBacktrackerMaze(grid,startPos)}}
         function findLongestPath(e,t){const a=[[t,0]],o=new Set([`${t.x},${t.y}`]);let n=0,s=t;for(;a.length>0;){const[t,i]=a.shift();if(i>n&&(n=i,s=t),!e[t.y][t.x].walls.top&&e[t.y-1]?.[t.x]){const n=`${t.x},${t.y-1}`;o.has(n)||(o.add(n),a.push([e[t.y-1][t.x],i+1]))}if(!e[t.y][t.x].walls.right&&e[t.y]?.[t.x+1]){const n=`${t.x+1},${t.y}`;o.has(n)||(o.add(n),a.push([e[t.y][t.x+1],i+1]))}if(!e[t.y][t.x].walls.bottom&&e[t.y+1]?.[t.x]){const n=`${t.x},${t.y+1}`;o.has(n)||(o.add(n),a.push([e[t.y+1][t.x],i+1]))}if(!e[t.y][t.x].walls.left&&e[t.y]?.[t.x-1]){const n=`${t.x-1},${t.y}`;o.has(n)||(o.add(n),a.push([e[t.y][t.x-1],i+1]))}}return s}
         function findSolutionPath(e,t,a){const o=[[t]],n=new Set([`${t.x},${t.y}`]);for(;o.length>0;){const t=o.shift(),s=t[t.length-1];if(s.x===a.x&&s.y===a.y)return t;const i=[],l=e[s.y][s.x];!l.walls.top&&e[s.y-1]?.[s.x]&&i.push(e[s.y-1][s.x]),!l.walls.right&&e[s.y]?.[s.x+1]&&i.push(e[s.y][s.x+1]),!l.walls.bottom&&e[s.y+1]?.[s.x]&&i.push(e[s.y+1][s.x]),!l.walls.left&&e[s.y]?.[s.x-1]&&i.push(e[s.y][s.x-1]);for(const e of i){const a=`${e.x},${e.y}`;n.has(a)||(n.add(a),o.push([...t,e]))}}return[]}
         function addDecorations(e,t,a,o){if(!currentTheme.decor||0===currentTheme.decor.length||!o)return void(state.totalDecor=0);const n=new Set([`${t.x},${t.y}`,`${a.x},${a.y}`]),s=[];for(let t=0;t<e.length;t++)for(let a=0;a<e[0].length;a++){n.has(`${a},${t}`)||s.push(e[t][a])}state.totalDecor=Math.min(o,s.length);for(let e=0;e<state.totalDecor;e++){if(0===s.length)break;const t=s.splice(Math.floor(Math.random()*s.length),1)[0];t&&(t.decor=currentTheme.decor[Math.floor(Math.random()*currentTheme.decor.length)])}}
@@ -327,17 +293,16 @@ function generateMinotaurLairMaze(grid) {
         function startMinotaurAI() {
             stopMinotaurAI();
             if (state.gameMode !== 'minotaur') return;
-
             state.minotaurs.forEach(minotaur => {
                 const move = () => {
-                    if (!state.isGameActive || state.isPaused) { // --- ИЗМЕНЕНИЕ ---
+                    if (!state.isGameActive) {
                         minotaur.moveTimeout = setTimeout(move, 500 + 500 * Math.random());
                         return;
                     }
 
                     const { x, y } = minotaur;
-                    const walls = mazeGrid[y][x].walls;
                     const possibleMoves = [];
+                    const walls = mazeGrid[y][x].walls;
 
                     if (!walls.top && y > 0) possibleMoves.push({ x: x, y: y - 1 });
                     if (!walls.bottom && y < state.mazeHeight - 1) possibleMoves.push({ x: x, y: y + 1 });
@@ -346,67 +311,26 @@ function generateMinotaurLairMaze(grid) {
 
                     if (possibleMoves.length > 0) {
                         let nextMove;
-
-                        // ===============================================================
-                        // НАЧАЛО НОВОЙ ЛОГИКИ «ТЕРРИТОРИАЛЬНЫЙ ОХОТНИК»
-                        // ===============================================================
-
-                        // 1. Определяем "логово" (финиш) и максимальную дистанцию до него.
-                        const lairPos = state.finishPos;
-                        // Используем Манхэттенское расстояние от угла (0,0) до логова как максимальное.
-                        const maxDistance = lairPos.x + lairPos.y; 
-
-                        // 2. Рассчитываем дистанцию от игрока до логова.
-                        const playerDistanceToLair = Math.abs(state.playerPos.x - lairPos.x) + Math.abs(state.playerPos.y - lairPos.y);
-
-                        // 3. Рассчитываем вероятность преследования.
-                        // Формула дает от 0 до 1, где 1 - игрок в логове, 0 - в самом дальнем углу.
-                        // Мы устанавливаем базовый шанс 20% и добавляем до 55% в зависимости от близости игрока к логову.
-                        const chaseProbability = 0.20 + 0.55 * (1 - Math.min(playerDistanceToLair, maxDistance) / maxDistance);
-
-                        if (Math.random() < chaseProbability) {
-                            // РЕЖИМ ПРЕСЛЕДОВАНИЯ: Идем за игроком.
-                            // Этот блок ищет ход, который максимально сократит дистанцию до игрока.
+                        if (possibleMoves.length === 1) {
+                            nextMove = possibleMoves[0];
+                        } else {
                             let bestMove = null;
-                            let minPlayerDistance = Infinity;
+                            let minDistance = Infinity;
+
                             for (const move of possibleMoves) {
                                 const distance = Math.abs(move.x - state.playerPos.x) + Math.abs(move.y - state.playerPos.y);
-                                if (distance < minPlayerDistance) {
-                                    minPlayerDistance = distance;
+                                if (distance < minDistance) {
+                                    minDistance = distance;
                                     bestMove = move;
                                 }
                             }
-                            nextMove = bestMove;
-
-                        } else {
-                            // РЕЖИM ПАТРУЛИРОВАНИЯ: Возвращаемся к логову.
-                            // Этот блок ищет ход, который максимально сократит дистанцию до логова (state.finishPos).
-                            let bestMove = null;
-                            let minLairDistance = Infinity;
-                            for (const move of possibleMoves) {
-                                const distance = Math.abs(move.x - lairPos.x) + Math.abs(move.y - lairPos.y);
-                                if (distance < minLairDistance) {
-                                    minLairDistance = distance;
-                                    bestMove = move;
-                                }
-                            }
-                            // Чтобы патрулирование не было слишком предсказуемым и Минотавр не застревал,
-                            // даем ему 20% шанс на случайный ход даже в этом режиме.
-                            if (bestMove && Math.random() < 0.80) {
-                               nextMove = bestMove;
+                            
+                            if (Math.random() < 0.75 && bestMove) {
+                                nextMove = bestMove;
                             } else {
-                               nextMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                                nextMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
                             }
                         }
-
-                        // Страховка: если по какой-то причине ход не выбран, выбираем случайный, чтобы не стоять на месте.
-                        if (!nextMove) {
-                            nextMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
-                        }
-
-                        // ===============================================================
-                        // КОНЕЦ НОВОЙ ЛОГИКИ
-                        // ===============================================================
 
                         minotaur.x = nextMove.x;
                         minotaur.y = nextMove.y;
@@ -550,31 +474,25 @@ function generateMinotaurLairMaze(grid) {
         }
         function checkUnlocks() {
             const totalStars = getTotalStars();
-            let lastNewUnlockObject = null; // Будем возвращать объект последней награды
-
+            let newUnlock = false;
             for (const unlock of config.unlocks) {
                 if (totalStars >= unlock.stars) {
-                    let justUnlocked = false;
                     if (unlock.type === 'mode' && !state.unlocked.modes.includes(unlock.key)) {
                         state.unlocked.modes.push(unlock.key);
                         state.lastUnlockMessage = `${config.languages[state.settings.language].unlock_mode_message || 'New mode unlocked: '}${config.languages[state.settings.language][unlock.key] || unlock.key}`;
-                        justUnlocked = true;
+                        newUnlock = true;
                     } else if (unlock.type === 'theme' && !state.unlocked.themes.includes(unlock.key)) {
                         state.unlocked.themes.push(unlock.key);
                         state.lastUnlockMessage = `${config.languages[state.settings.language].unlock_theme_message || 'New theme unlocked: '}${config.languages[state.settings.language][unlock.key] || unlock.key}`;
-                        justUnlocked = true;
-                    }
-                    if (justUnlocked) {
-                        lastNewUnlockObject = unlock; // Сохраняем последнюю разблокированную награду
+                        newUnlock = true;
                     }
                 }
             }
-
-            if (lastNewUnlockObject) {
+            if (newUnlock) {
                 updateGameModeScreen();
                 updateThemesScreen();
             }
-            return lastNewUnlockObject; // Возвращаем объект или null
+            return newUnlock;
         }
         function checkWin() {
             if (isStoppingGame || !state.isGameActive) return false;
@@ -591,13 +509,13 @@ function generateMinotaurLairMaze(grid) {
                         } else {
                             stars = 3;
                         }
-                        
+
                         const oldStars = getTotalStars();
                         if (stars > (state.progress[state.gameMode]?.[state.currentLevel] || 0)) {
                             state.progress[state.gameMode][state.currentLevel] = stars;
                         }
 
-                        const newUnlockObject = checkUnlocks(); // Получаем объект награды или null
+                        const unlockedSomething = checkUnlocks();
                         saveGameData();
                         const totalStars = getTotalStars();
                         updateTotalStarsCounter();
@@ -620,24 +538,26 @@ function generateMinotaurLairMaze(grid) {
                         document.getElementById("next-level-button").style.display = (state.currentLevel < getActiveLevelsConfig().length - 1 && nextLevelUnlocked) ? "flex" : "none";
 
                         const victoryProgressBar = document.getElementById('victory-progress-bar');
+                        // Сначала показываем старое состояние прогресса
+                        updateUnlockProgressBar(oldStars, victoryProgressBar, true);
                         
                         showModal(dom.victoryModal);
-
-                        if (newUnlockObject) {
-                            // --- СЦЕНАРИЙ С РАЗБЛОКИРОВКОЙ ---
-                            // 1. Показываем состояние ДО победы
-                            updateUnlockProgressBar(oldStars, victoryProgressBar);
-                            // 2. Через паузу запускаем анимацию
-                            setTimeout(() => {
-                                showUnlockAnimation(victoryProgressBar, newUnlockObject, totalStars, () => {
-                                    // 3. После анимации показываем новое состояние
+                        
+                        // Через небольшую задержку запускаем анимацию или обновление
+                        setTimeout(() => {
+                           if (unlockedSomething) {
+                                showUnlockAnimation(victoryProgressBar, () => {
+                                    // После анимации показываем новое состояние
                                     updateUnlockProgressBar(totalStars, victoryProgressBar);
                                 });
-                            }, 800);
-                        } else {
-                            // --- ОБЫЧНЫЙ СЦЕНАРИЙ (БЕЗ РАЗБЛОКИРОВКИ) ---
-                            updateUnlockProgressBar(totalStars, victoryProgressBar);
-                        }
+                            } 
+							else {
+                                 // Если ничего не разблокировано, просто плавно обновляем до нового значения
+                                 const fill = victoryProgressBar.querySelector('.progress-bar-fill');
+                                 if (fill) fill.classList.remove('no-transition');
+                                 updateUnlockProgressBar(totalStars, victoryProgressBar);
+                           }
+                        }, 300);
 
                         audioManager.playSfx(config.audio.victorySfx[Math.floor(Math.random() * config.audio.victorySfx.length)]);
                         launchConfetti();
@@ -709,128 +629,64 @@ function generateMinotaurLairMaze(grid) {
         function updateSoundButtonUI(){const e=document.getElementById('sound-toggle-button');if(e){const t=e.querySelector('.card-icon');t&&(t.textContent=state.settings.sound?'🔊':'🔇')}}
         function updateDpadButtonUI(){const e=document.getElementById('dpad-toggle-button');if(e){const t=e.querySelector('.dpad-status');t&&(t.textContent=state.settings.dpad?'✔️':'❌')}}
         function updateModeCompletionPercentage(){const e=getActiveLevelsConfig();for(const a of["classic","flashlight","ghost","timer","minotaur","all-in-one"]){const o=document.getElementById(`mode-${a}`);if(o&&!o.classList.contains("locked")){const n=o.querySelector(".mode-percentage");if(n){const s=a==="minotaur"?5:e.length,i=3*s,l=Object.values(state.progress[a]||{}).reduce((e,t)=>e+t,0);n.textContent=`${i>0?Math.round(l/i*100):0}%`}}}}
-       function showUnlockAnimation(container, unlockObject, totalStars, onComplete) {
-            if (!container || !unlockObject) {
-                if(onComplete) onComplete();
+       function showUnlockAnimation(container, onComplete) {
+            if (!container || !container.style.display || container.style.display === 'none') {
+                if (onComplete) onComplete();
                 return;
             }
 
             const fill = container.querySelector('.progress-bar-fill');
             const label = container.querySelector('.required-stars-label');
-            const content = container.querySelector('.progress-bar-content');
-            if (!fill || !label || !content) {
+            if (!fill || !label) {
                 if(onComplete) onComplete();
                 return;
             }
 
-            // --- ЭТАП 1: Показываем достижение цели ---
+            // Убираем класс no-transition, чтобы первая анимация работала
             fill.classList.remove('no-transition');
-            // Устанавливаем текст и эмодзи для ДОСТИГНУТОЙ награды
-            content.textContent = `${totalStars} / ${unlockObject.stars} ⭐`;
-            label.textContent = unlockObject.emoji;
-            // Анимируем заполнение до 100%
+            // Шаг 1: Анимировать до 100%
             fill.style.width = '100%';
 
             setTimeout(() => {
+                // Шаг 2: Воспроизвести звук и показать анимацию "sparkle"
                 audioManager.playSfx(config.audio.unlockSfx);
                 label.classList.add('sparkle-animation');
 
                 setTimeout(() => {
+                    // Шаг 3: Сбросить анимацию и вызвать колбэк для обновления прогресса
                     label.classList.remove('sparkle-animation');
-                    // Вызываем колбэк, который отобразит ЭТАП 2 (прогресс к следующей цели)
+                    
+                    // ВАЖНО: Мы больше не сбрасываем шкалу в 0% здесь.
+                    // Вместо этого сразу вызываем колбэк, который установит новое корректное значение.
                     if (onComplete) {
                         onComplete();
                     }
-                }, 1500); // Длительность "sparkle"
 
-            }, 500); // Длительность анимации заполнения
+                }, 2000); // Длительность анимации "sparkle"
+
+            }, 500); // Длительность анимации заполнения до 100%
         }
         function updateUnlockProgressBar(totalStars, container, isPreUnlockDisplay = false) {
             if (!container) return;
+            const currentStars = totalStars;
+            const nextUnlock = config.unlocks.find(u => currentStars < u.stars);
             
-            // Находим следующую награду, основываясь на количестве звёзд
-            const nextUnlock = config.unlocks.find(u => totalStars < u.stars);
-
-            // Режим для отображения ПОСЛЕ анимации разблокировки или для главного меню
-            if (!isPreUnlockDisplay) {
-                if (!nextUnlock) {
-                    container.style.display = 'none';
-                    return;
-                }
-                container.style.display = 'block';
-                
-                const requiredStars = nextUnlock.stars;
-                // Используем простую и понятную логику: текущие звёзды / требуемые звёзды
-                const progress = totalStars / requiredStars;
-                
-                container.querySelector('.required-stars-label').textContent = nextUnlock.emoji;
-                container.querySelector('.progress-bar-fill').style.width = `${Math.min(100, progress * 100)}%`;
-                container.querySelector('.progress-bar-content').textContent = `${totalStars} / ${requiredStars} ⭐`;
-            
-            } else {
-                // СПЕЦИАЛЬНЫЙ РЕЖИМ: для отображения В МОМЕНТ разблокировки (тот, что до 100%)
-                if (!nextUnlock) {
-                    container.style.display = 'none';
-                    return;
-                }
-                container.style.display = 'block';
-
-                const requiredStarsForUnlock = nextUnlock.stars;
-                const currentTotalStars = getTotalStars(); // Получаем актуальное общее число звёзд
-
-                // Показываем, что порог пройден: текущее общее число звёзд / порог
-                container.querySelector('.progress-bar-content').textContent = `${currentTotalStars} / ${requiredStarsForUnlock} ⭐`;
-                // Заполняем шкалу на 100%
-                container.querySelector('.progress-bar-fill').style.width = '100%';
-                // Показываем эмодзи полученной награды
-                container.querySelector('.required-stars-label').textContent = nextUnlock.emoji;
+            if (!nextUnlock) {
+                container.style.display = 'none';
+                return;
             }
+            container.style.display = 'block';
+
+            // --- ИСПРАВЛЕНИЕ: Упрощенный и корректный расчет прогресса ---
+            const requiredStars = nextUnlock.stars;
+            const progress = currentStars / requiredStars; // Считаем как простое отношение
+            
+            container.querySelector('.required-stars-label').textContent = nextUnlock.emoji;
+            container.querySelector('.progress-bar-fill').style.width = `${Math.min(100, progress * 100)}%`;
+            container.querySelector('.progress-bar-content').textContent = `${currentStars} / ${requiredStars} ⭐`;
         }
         function handleCanvasClick(e){if(state.isIntroAnimationActive)return void beginGameplay();if(state.isMoving||!state.isGameActive||state.playerIsDefeated)return;const t=dom.mazeCanvas.getBoundingClientRect(),a=(e.clientX-t.left)/(dom.mazeCanvas.width/t.width),o=(e.clientY-t.top)/(dom.mazeCanvas.height/t.height),n=a-(state.playerPos.x*cellSize+cellSize/2),s=o-(state.playerPos.y*cellSize+cellSize/2);initiatePlayerMove(Math.abs(n)>Math.abs(s)?n>0?"right":"left":s>0?"down":"up")}
-        
-        function pauseGame() {
-            // Условие исправлено: теперь проверяется только, не на паузе ли уже игра
-            if (state.isPaused) return; 
-            state.isPaused = true;
-            
-            // Приостанавливаем таймер
-            if (state.gameTimer.id) {
-                clearInterval(state.gameTimer.id);
-            }
-            
-            // Запоминаем, играла ли музыка, и ставим ее на паузу
-            audioManager.musicWasPlaying = audioManager.currentTrack && !audioManager.currentTrack.paused;
-            audioManager.currentTrack?.pause();
-            audioManager.warningSfx?.pause();
-        }
-
-        function resumeGame() {
-            // Условие исправлено: теперь проверяется только, была ли игра на паузе
-            if (!state.isPaused) return; 
-            state.isPaused = false;
-
-            // Возобновляем музыку, если она играла
-            if (audioManager.musicWasPlaying) {
-                 audioManager.currentTrack?.play().catch(e => {});
-            }
-
-            // Возобновляем таймер, только если игра активна (эта логика осталась без изменений)
-            if (state.isGameActive && ["timer","all-in-one","minotaur"].includes(state.gameMode) && state.gameTimer.timeLeft > 0) {
-                if (state.gameTimer.timeLeft <= 20) {
-                    audioManager.playWarningSfx(config.audio.timerWarningSfx);
-                }
-                state.gameTimer.id = setInterval(countdown, 1000);
-            }
-        }
-
-        function handlePageVisibility() {
-            if (document.hidden) {
-                pauseGame();
-            } else {
-                resumeGame();
-            }
-        }
-        
+        function handlePageVisibility(){document.hidden?(state.gameTimer.id&&(clearInterval(state.gameTimer.id),state.gameTimer.isPaused=!0),audioManager.musicWasPlaying=audioManager.currentTrack&&!audioManager.currentTrack.paused,audioManager.currentTrack?.pause(),audioManager.warningSfx?.pause()):(audioManager.musicWasPlaying&&audioManager.currentTrack?.play().catch(e=>{}),state.gameTimer.isPaused&&(state.gameTimer.isPaused=!1,state.isGameActive&&["timer","all-in-one","minotaur"].includes(state.gameMode)&&state.gameTimer.timeLeft>0&&(state.gameTimer.timeLeft<=20&&audioManager.playWarningSfx(config.audio.timerWarningSfx),state.gameTimer.id=setInterval(countdown,1e3))))}
         async function preloadAssets(){const e=config.backgrounds.map(e=>new Promise(t=>{const a=new Image;a.onload=()=>t(a),a.onerror=()=>{console.warn(`Failed to load image: ${e}`),t(null)},a.crossOrigin="Anonymous",a.src=e}));loadedBackgroundImages.push(...(await Promise.all(e)).filter(e=>null!==e)),setTimeout(goToMainMenu,500)}
         function unlockAll() {
             state.allLevelsUnlocked = true; // Разблокируем все уровни
@@ -959,9 +815,7 @@ function generateMinotaurLairMaze(grid) {
 
             currentTheme = "random"===state.theme||!config.themes[state.theme]?config.themes[Object.keys(config.themes)[Math.floor(Math.random()*Object.keys(config.themes).length)]]:config.themes[state.theme];
             updateEmojiBackground();
-            document.addEventListener('visibilitychange', handlePageVisibility);
-            window.addEventListener('blur', pauseGame);
-            window.addEventListener('focus', resumeGame);
+            document.addEventListener('visibilitychange',handlePageVisibility);
             document.addEventListener('keydown',handleGlobalKeyDown);
             let resizeTimeout;window.addEventListener('resize',()=>{clearTimeout(resizeTimeout),resizeTimeout=setTimeout(()=>{'game-screen'===state.currentScreen&&resizeCanvas(),'level-selection-screen'===state.currentScreen&&showLevelSelectionScreen(state.gameMode),setupNavigation()},100)});
             
